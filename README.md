@@ -1,10 +1,10 @@
 # guac-ingest Action
 
-This Action ingests SBOMs and Attestations into the [Kusari hosted GUAC platform](https://www.kusari.dev/) as part of your github workflow. This will enable quick and easy integration to your GUAC instance with very minimal input.
+This Action ingests various artifacts (such as SBOMs, SLSA and other attestations)  into the [Kusari Platform](https://www.kusari.dev/) as part of your github workflow. This will enable quick and easy integration to your tenant with very minimal input.
 
-Authentication credentials (client-id, client-secret) are provided by the Kusari team. 
+Authentication credentials (client-id, client-secret) are provided by the Kusari team.
 
-For details on how to query and utilize the data upon ingestion, please see documentataion for the [GUAC use cases](https://docs.guac.sh/guac-use-cases/). 
+For details on how to query and utilize the data upon ingestion, please see our [documentataion](https://docs.us.kusari.cloud/).
 
 
 ## Usage
@@ -17,8 +17,8 @@ steps:
 
   - uses: [Your build and SBOM/Provenance generation steps]
 
-  - uses: kusaridev/guac-ingest@v0
-    name: GUAC Ingestion
+  - uses: kusaridev/kusari-ingest@v0
+    name: Kusari Ingestion
     with:
       files: './spdx.json'
       api-addr: 'https://[kusari-tenant-id].api.us.kusari.cloud'
@@ -46,7 +46,15 @@ steps:
 
 ### `token-url`
 
-Url for auth token provider
+**Required** - Url for auth token provider
+
+### `alias`
+
+**Required** - Alias of the package for grouping
+
+### `type`
+
+**Required** - Type of the file being uploaded
 
 ## Outputs
 

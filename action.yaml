@@ -1,6 +1,6 @@
 ---
-name: 'GUAC Ingest'
-description: 'Ingest files into GUAC'
+name: 'Kusari Ingest'
+description: 'Ingest files into Kusari Platform'
 branding:
   icon: "shield"
   color: "purple"
@@ -22,6 +22,14 @@ inputs:
     description: 'Url for auth token provider'
     required: true
     default: https://auth.us.kusari.cloud/oauth2/token
+  alias:
+    description: 'Alias of the package for grouping'
+    required: false
+    default: ""
+  type:
+    description: 'Type of the file being uploaded'
+    required: false
+    default: ""
 outputs:
   console_out:
     description: 'GUAC ingestion output'
@@ -29,8 +37,10 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
-    - ${{ inputs.files }}
-    - ${{ inputs.client-id }}
-    - ${{ inputs.client-secret }}
-    - ${{ inputs.api-addr }}
-    - ${{ inputs.token-url }}
+    - "--file-path=${{ inputs.files }}"
+    - "--client-id=${{ inputs.client-id }}"
+    - "--client-secret=${{ inputs.client-secret }}"
+    - "--tenant-endpoint=${{ inputs.api-addr }}"
+    - "--token-endpoint=${{ inputs.token-url }}"
+    - "--alias=${{ inputs.alias }}"
+    - "--document-type=${{ inputs.type }}"
