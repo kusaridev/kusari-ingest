@@ -1,4 +1,4 @@
-# guac-ingest Action
+# kusari-ingest Action
 
 This Action ingests various artifacts (such as SBOMs, SLSA and other attestations)  into the [Kusari Platform](https://www.kusari.dev/) as part of your github workflow. This will enable quick and easy integration to your tenant with very minimal input.
 
@@ -20,24 +20,24 @@ steps:
   - uses: kusaridev/kusari-ingest@v0
     name: Kusari Ingestion
     with:
-      files: './spdx.json'
+      file-path: './spdx.json'
       tenant-endpoint: 'https://[kusari-tenant-id].api.us.kusari.cloud'
       token-endpoint: 'https://auth.dev.kusari.cloud/oauth2/token'
       client-id: ${{ secrets.KUSARI_CLIENT_ID }}
       client-secret: ${{ secrets.KUSARI_CLIENT_SECRET }}
       alias: 'package alias'
-      type: 'image'
+      document-type: 'image'
 ```
 
 ## Inputs
 
-### `files`
+### `file-path`
 
 **Required** - Path to directory or specific file to ingest
 
 ### `tenant-endpoint`
 
-**Required** - Kusari hosted GUAC tenant api endpoint
+**Required** - Kusari Platform tenant api endpoint
 
 ### `client-id`
 
@@ -49,13 +49,13 @@ steps:
 
 ### `token-endpoint`
 
-**Required** - Url for auth token provider
+**Required** - Kusari Platform auth token provider endpoint
 
 ### `alias`
 
 **Optional** - Alias of the package for grouping
 
-### `type`
+### `document-type`
 
 **Optional** - Type of the file being uploaded ("image" or "build")
 
