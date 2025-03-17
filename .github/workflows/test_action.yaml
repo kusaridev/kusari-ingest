@@ -1,0 +1,24 @@
+on: [push]
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    name: ingest files to Kusari Platform
+    steps:
+      # To use this repository's private action,
+      # you must check out the repository
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Kusari Ingestion
+        uses: ./ # Uses an action in the root directory
+        id: ingest 
+        with:
+          file-path: './spdx_vuln.json'
+          tenant-endpoint: 'https://parth.api.us.kusari.cloud'
+          token-endpoint: 'https://auth.dev.kusari.cloud/oauth2/token'
+          client-id: ${{ secrets.KUSARI_CLIENT_ID }}
+          client-secret: ${{ secrets.KUSARI_CLIENT_SECRET }}
+
+      - name: Get the output time
+        run: echo "The time was ${{ steps.ingest.outputs.console_out }}"
