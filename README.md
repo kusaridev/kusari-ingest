@@ -24,6 +24,8 @@ steps:
       api-addr: 'https://[kusari-tenant-id].api.us.kusari.cloud'
       client-id: ${{ secrets.KUSARI_CLIENT_ID }}
       client-secret: ${{ secrets.KUSARI_CLIENT_SECRET }}
+      alias: 'package alias'
+      type: 'image'
 ```
 
 ## Inputs
