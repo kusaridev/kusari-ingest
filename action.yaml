@@ -1,16 +1,16 @@
 ---
-name: 'GUAC Ingest'
-description: 'Ingest files into GUAC'
+name: 'Kusari Ingest'
+description: 'Ingest files into Kusari Platform'
 branding:
   icon: "shield"
   color: "purple"
 author: 'Kusari'
 inputs:
-  files:
+  file-path:
     description: 'Path to directory or specific file to ingest'
     required: true
-  api-addr:
-    description: 'Kusari hosted GUAC tenant api endpoint'
+  tenant-endpoint:
+    description: 'Kusari Platform tenant api endpoint'
     required: true
   client-id:
     description: 'Client id for auth token provider'
@@ -18,19 +18,29 @@ inputs:
   client-secret:
     description: 'Client secret for auth token provider'
     required: true
-  token-url:
-    description: 'Url for auth token provider'
+  token-endpoint:
+    description: 'Kusari Platform auth token provider endpoint'
     required: true
     default: https://auth.us.kusari.cloud/oauth2/token
+  alias:
+    description: 'Alias of the package for grouping'
+    required: false
+    default: ""
+  document-type:
+    description: 'Type of the file being uploaded'
+    required: false
+    default: ""
 outputs:
   console_out:
-    description: 'GUAC ingestion output'
+    description: 'Kusari Platform ingestion output'
 runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
-    - ${{ inputs.files }}
-    - ${{ inputs.client-id }}
-    - ${{ inputs.client-secret }}
-    - ${{ inputs.api-addr }}
-    - ${{ inputs.token-url }}
+    - "--file-path=${{ inputs.file-path }}"
+    - "--client-id=${{ inputs.client-id }}"
+    - "--client-secret=${{ inputs.client-secret }}"
+    - "--tenant-endpoint=${{ inputs.tenant-endpoint }}"
+    - "--token-endpoint=${{ inputs.token-endpoint }}"
+    - "--alias=${{ inputs.alias }}"
+    - "--document-type=${{ inputs.document-type }}"
