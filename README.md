@@ -21,7 +21,8 @@ steps:
     name: Kusari Ingestion
     with:
       files: './spdx.json'
-      api-addr: 'https://[kusari-tenant-id].api.us.kusari.cloud'
+      tenant-endpoint: 'https://[kusari-tenant-id].api.us.kusari.cloud'
+      token-endpoint: 'https://auth.dev.kusari.cloud/oauth2/token'
       client-id: ${{ secrets.KUSARI_CLIENT_ID }}
       client-secret: ${{ secrets.KUSARI_CLIENT_SECRET }}
       alias: 'package alias'
@@ -34,7 +35,7 @@ steps:
 
 **Required** - Path to directory or specific file to ingest
 
-### `api-addr`
+### `tenant-endpoint`
 
 **Required** - Kusari hosted GUAC tenant api endpoint
 
@@ -46,17 +47,17 @@ steps:
 
 **Required** - Client secret for auth token provider
 
-### `token-url`
+### `token-endpoint`
 
 **Required** - Url for auth token provider
 
 ### `alias`
 
-**Required** - Alias of the package for grouping
+**Optional** - Alias of the package for grouping
 
 ### `type`
 
-**Required** - Type of the file being uploaded
+**Optional** - Type of the file being uploaded ("image" or "build")
 
 ## Outputs
 

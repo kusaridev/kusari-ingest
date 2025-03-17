@@ -9,7 +9,7 @@ inputs:
   files:
     description: 'Path to directory or specific file to ingest'
     required: true
-  api-addr:
+  tenant-endpoint:
     description: 'Kusari hosted GUAC tenant api endpoint'
     required: true
   client-id:
@@ -18,7 +18,7 @@ inputs:
   client-secret:
     description: 'Client secret for auth token provider'
     required: true
-  token-url:
+  token-endpoint:
     description: 'Url for auth token provider'
     required: true
     default: https://auth.us.kusari.cloud/oauth2/token
@@ -40,7 +40,7 @@ runs:
     - "--file-path=${{ inputs.files }}"
     - "--client-id=${{ inputs.client-id }}"
     - "--client-secret=${{ inputs.client-secret }}"
-    - "--tenant-endpoint=${{ inputs.api-addr }}"
-    - "--token-endpoint=${{ inputs.token-url }}"
+    - "--tenant-endpoint=${{ inputs.tenant-endpoint }}"
+    - "--token-endpoint=${{ inputs.token-endpoint }}"
     - "--alias=${{ inputs.alias }}"
     - "--document-type=${{ inputs.type }}"
