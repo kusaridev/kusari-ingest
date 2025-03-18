@@ -22,11 +22,8 @@ steps:
     with:
       file-path: './spdx.json'
       tenant-endpoint: 'https://[kusari-tenant-id].api.us.kusari.cloud'
-      token-endpoint: 'https://auth.dev.kusari.cloud/oauth2/token'
       client-id: ${{ secrets.KUSARI_CLIENT_ID }}
       client-secret: ${{ secrets.KUSARI_CLIENT_SECRET }}
-      alias: 'package alias'
-      document-type: 'image'
 ```
 
 ## Inputs
@@ -50,14 +47,6 @@ steps:
 ### `token-endpoint`
 
 **Required** - Kusari Platform auth token provider endpoint
-
-### `alias`
-
-**Optional** - Alias of the package for grouping
-
-### `document-type`
-
-**Optional** - Type of the file being uploaded ("image" or "build")
 
 ## Outputs
 
