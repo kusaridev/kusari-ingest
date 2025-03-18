@@ -18,7 +18,7 @@ jobs:
         id: ingest 
         with:
           file-path: './spdx_vuln.json'
-          tenant-endpoint: 'https://parth.api.us.kusari.cloud'
+          tenant-endpoint: 'https://parth.api.dev.kusari.cloud'
           token-endpoint: 'https://auth.dev.kusari.cloud/oauth2/token'
           client-id: ${{ secrets.KUSARI_CLIENT_ID }}
           client-secret: ${{ secrets.KUSARI_CLIENT_SECRET }}
