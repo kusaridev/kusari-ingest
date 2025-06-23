@@ -30,6 +30,19 @@ inputs:
     description: 'Type of the file being uploaded'
     required: false
     default: ""
+  open-vex:
+    description: 'Set to true if ingesting an OpenVEX document. When true, tag is required and so is one of software-id and sbom-subject.'
+    required: false
+    default: false
+  tag:
+    description: 'Tag for the document. Currently only used for OpenVEX. Example: govulncheck'
+    required: false
+  software-id:
+    description: 'Kusari Platform software ID that the document applies to. Currently only used for OpenVEX. Example: 1234'
+    required: false
+  sbom-subject:
+    description: 'Kusari Platform software SBOM subject substring value that uniquely indicates which software that the document applies to. Currently only used for OpenVex. Example: kusari-ingest'
+    required: false
 outputs:
   console_out:
     description: 'Kusari Platform ingestion output'
@@ -44,3 +57,7 @@ runs:
     - "--token-endpoint=${{ inputs.token-endpoint }}"
     - "--alias=${{ inputs.alias }}"
     - "--document-type=${{ inputs.document-type }}"
+    - "--open-vex=${{ inputs.open-vex }}"
+    - "--tag=${{ inputs.tag }}"
+    - "--software-id=${{ inputs.software-id }}"
+    - "--sbom-subject=${{ inputs.sbom-subject }}"
