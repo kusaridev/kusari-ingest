@@ -1,2 +1,2 @@
-#v0.14.1 - multi-arch
-FROM ghcr.io/kusaridev/kusari-uploader:sha.3cd47ced640408c3d3055865af95a0928f3dc760
+#v0.14.2 - multi-arch
+FROM ghcr.io/kusaridev/kusari-uploader:sha.955e2aff51b62e221d3fbf4d173f8c1046d3facb
