@@ -43,6 +43,9 @@ inputs:
   sbom-subject:
     description: 'Kusari Platform software SBOM subject substring value that uniquely indicates which software that the document applies to. Currently only used for OpenVex. Example: kusari-ingest'
     required: false
+  component-name:
+    description: 'Kusari Platform software component name (multiple SBOM subjects can belong to the same component). If a component with this name does not exist, it will be created. Optional. Example: kusari-ingest'
+    required: false
 outputs:
   console_out:
     description: 'Kusari Platform ingestion output'
@@ -61,3 +64,4 @@ runs:
     - "--tag=${{ inputs.tag }}"
     - "--software-id=${{ inputs.software-id }}"
     - "--sbom-subject=${{ inputs.sbom-subject }}"
+    - "--component-name=${{ inputs.component-name }}"
