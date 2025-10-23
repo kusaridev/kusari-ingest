@@ -48,6 +48,34 @@ steps:
 
 **Required** - Kusari Platform auth token provider endpoint
 
+### `alias`
+
+**Optional** - Alias of the package for grouping. Default: `""`
+
+### `document-type`
+
+**Optional** - Type of the file being uploaded. Default: `""`
+
+### `open-vex`
+
+**Optional** - Set to true if ingesting an OpenVEX document. When true, tag is required and so is one of software-id and sbom-subject. Default: `false`
+
+### `tag`
+
+**Optional** - Tag for the document. Currently only used for OpenVEX. Example: `govulncheck`
+
+### `software-id`
+
+**Optional** - Kusari Platform software ID that the document applies to. Currently only used for OpenVEX. Example: `1234`
+
+### `sbom-subject`
+
+**Optional** - Kusari Platform software SBOM subject substring value that uniquely indicates which software that the document applies to. Currently only used for OpenVex. Example: `kusari-ingest`
+
+### `component-name`
+
+**Optional** - Kusari Platform software component name (multiple SBOM subjects can belong to the same component). If a component with this name does not exist, it will be created. Default: `${{ github.event.repository.name }}`. Example: `kusari-ingest`
+
 ## Outputs
 
 ### `console_out`
