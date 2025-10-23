@@ -46,6 +46,7 @@ inputs:
   component-name:
     description: 'Kusari Platform software component name (multiple SBOM subjects can belong to the same component). If a component with this name does not exist, it will be created. Optional. Example: kusari-ingest'
     required: false
+    default: ${{ github.event.repository.name }}
 outputs:
   console_out:
     description: 'Kusari Platform ingestion output'
