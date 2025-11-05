@@ -78,7 +78,7 @@ steps:
 
 ### `check-blocked-packages`
 
-**Optional** - Check SBOM dependencies against the Blocked Package list in the Kusari Platform. Default: `false`
+**Optional** - Check SBOM dependencies against the Blocked Package list in the Kusari Platform. If a blocked package is found the program will terminate with a non-zero exit status, failing the job.Default: `false`
 
 ## Outputs
 
