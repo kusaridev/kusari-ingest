@@ -47,6 +47,10 @@ inputs:
     description: 'Kusari Platform software component name (multiple SBOM subjects can belong to the same component). If a component with this name does not exist, it will be created. Optional. Example: kusari-ingest'
     required: false
     default: ${{ github.event.repository.name }}
+  check-blocked-packages:
+    description: Check SBOM dependencies against the Blocked Package list in the Kusari Platform.
+    required: false
+    default: false
 outputs:
   console_out:
     description: 'Kusari Platform ingestion output'
@@ -66,3 +70,4 @@ runs:
     - "--software-id=${{ inputs.software-id }}"
     - "--sbom-subject=${{ inputs.sbom-subject }}"
     - "--component-name=${{ inputs.component-name }}"
+    - "--check-blocked-packages=${{ inputs.check-blocked-packages }}"

@@ -76,6 +76,10 @@ steps:
 
 **Optional** - Kusari Platform software component name (multiple SBOM subjects can belong to the same component). If a component with this name does not exist, it will be created. Default: `${{ github.event.repository.name }}`. Example: `kusari-ingest`
 
+### `check-blocked-packages`
+
+**Optional** - Check SBOM dependencies against the Blocked Package list in the Kusari Platform. Default: `false`
+
 ## Outputs
 
 ### `console_out`
