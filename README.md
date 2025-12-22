@@ -78,13 +78,21 @@ steps:
 
 ### `check-blocked-packages`
 
-**Optional** - Check SBOM dependencies against the Blocked Package list in the Kusari Platform. If a blocked package is found the program will terminate with a non-zero exit status, failing the job.Default: `false`
+**Optional** - Check SBOM dependencies against the Blocked Package list in the Kusari Platform. If a blocked package is found the program will terminate with a non-zero exit status, failing the job. Default: `false`
+
+### `sbom-subject-name-override`
+
+**Optional** - SBOM Subject Name override (for SBOMs only). This allows you to override the subject name extracted from the SBOM document. Default: `""`
+
+### `sbom-subject-version-override`
+
+**Optional** - SBOM Subject Version override (for SBOMs only). This allows you to override the subject version extracted from the SBOM document. Default: `""`
 
 ## Outputs
 
 ### `console_out`
 
-Raw output of the kusari-uploader command
+Raw output of the kusari CLI upload command
 
 # License
 
