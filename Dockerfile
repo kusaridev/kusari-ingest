@@ -1,2 +1,9 @@
-#v0.14.6 - multi-arch
-FROM ghcr.io/kusaridev/kusari-uploader:sha.91b46836dc9a531ff958a9da800d73dfe71cffdd
+# Using kusari-cli for upload functionality
+FROM ghcr.io/kusaridev/kusari-cli:sha-e41fbcafdde40ee0c5435f738ccc2fc8eb1075b5
+
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Set entrypoint
+ENTRYPOINT ["/entrypoint.sh"]

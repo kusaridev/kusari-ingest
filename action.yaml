@@ -33,7 +33,7 @@ inputs:
   open-vex:
     description: 'Set to true if ingesting an OpenVEX document. When true, tag is required and so is one of software-id and sbom-subject.'
     required: false
-    default: false
+    default: "false"
   tag:
     description: 'Tag for the document. Currently only used for OpenVEX. Example: govulncheck'
     required: false
@@ -50,7 +50,15 @@ inputs:
   check-blocked-packages:
     description: Check SBOM dependencies against the Blocked Package list in the Kusari Platform.
     required: false
-    default: false
+    default: "false"
+  sbom-subject-name-override:
+    description: 'SBOM Subject Name override (optional, for SBOMs only)'
+    required: false
+    default: ""
+  sbom-subject-version-override:
+    description: 'SBOM Subject Version override (optional, for SBOMs only)'
+    required: false
+    default: ""
 outputs:
   console_out:
     description: 'Kusari Platform ingestion output'
