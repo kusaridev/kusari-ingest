@@ -1,5 +1,5 @@
 # Using kusari-cli for upload functionality
-FROM ghcr.io/kusaridev/kusari-cli:v0.15.0@sha256:5a09486afc55d7c5d54187ba87daf47ec54c54338e9505c1bd7df2d95688de67 AS kusari
+FROM ghcr.io/kusaridev/kusari-cli@sha256:0d82fe16c3bd965279d5c2ff6cdc27a0d9047a5bcd34b7d705a922f574c4f917 AS kusari
 
 # Use Alpine as final base to provide shell environment
 FROM alpine:latest
