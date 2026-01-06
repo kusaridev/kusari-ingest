@@ -79,3 +79,5 @@ runs:
     - "--sbom-subject=${{ inputs.sbom-subject }}"
     - "--component-name=${{ inputs.component-name }}"
     - "--check-blocked-packages=${{ inputs.check-blocked-packages }}"
+    - "--sbom-subject-name-override=${{ inputs.sbom-subject-name-override }}"
+    - "--sbom-subject-version-override=${{ inputs.sbom-subject-version-override }}"
