@@ -82,6 +82,8 @@ fi
 export HOME=$(mktemp -d)
 
 # Login to kusari using client credentials
+echo "Kusari CLI Version:"
+kusari --version
 echo "Logging in to Kusari..."
 kusari auth login \
   --client-id="${CLIENT_ID}" \
