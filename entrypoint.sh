@@ -17,6 +17,7 @@ COMPONENT_NAME=""
 CHECK_BLOCKED_PACKAGES="false"
 SBOM_SUBJECT_NAME_OVERRIDE=""
 SBOM_SUBJECT_VERSION_OVERRIDE=""
+WAIT="true"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -64,6 +65,9 @@ while [ $# -gt 0 ]; do
       ;;
     --sbom-subject-version-override=*)
       SBOM_SUBJECT_VERSION_OVERRIDE="${1#*=}"
+      ;;
+    --wait=*)
+      WAIT="${1#*=}"
       ;;
   esac
   shift
@@ -137,6 +141,12 @@ fi
 
 if [ -n "${SBOM_SUBJECT_VERSION_OVERRIDE}" ]; then
   set -- "$@" --sbom-subject-version-override="${SBOM_SUBJECT_VERSION_OVERRIDE}"
+fi
+
+if [ "${WAIT}" = "false" ]; then
+  set -- "$@" --wait=false
+else
+  set -- "$@" --wait
 fi
 
 # Execute the command

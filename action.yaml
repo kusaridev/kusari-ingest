@@ -59,6 +59,10 @@ inputs:
     description: 'SBOM Subject Version override (optional, for SBOMs only)'
     required: false
     default: ""
+  wait:
+    description: 'Wait for ingestion status (default: true)'
+    required: false
+    default: "true"
 outputs:
   console_out:
     description: 'Kusari Platform ingestion output'
@@ -81,3 +85,4 @@ runs:
     - "--check-blocked-packages=${{ inputs.check-blocked-packages }}"
     - "--sbom-subject-name-override=${{ inputs.sbom-subject-name-override }}"
     - "--sbom-subject-version-override=${{ inputs.sbom-subject-version-override }}"
+    - "--wait=${{ inputs.wait }}"
