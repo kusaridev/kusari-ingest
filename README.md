@@ -88,6 +88,10 @@ steps:
 
 **Optional** - SBOM Subject Version override (for SBOMs only). This allows you to override the subject version extracted from the SBOM document. Default: `""`
 
+### `wait`
+
+**Optional** - Wait for ingestion status. When set to `true`, the action will wait for the ingestion process to complete and report the final status. When set to `false`, the action will return immediately after uploading without waiting for processing to complete. Default: `true`
+
 ## Outputs
 
 ### `console_out`
