@@ -73,6 +73,12 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+# Fail if CLIENT_ID or CLIENT_SECRET is still empty
+if [ -z "${CLIENT_ID}" ] || [ -z ${CLIENT_SECRET} ]; then
+  echo "CLIENT_ID or CLIENT_SECRET not provided"
+  exit 1
+fi
+
 # Set auth endpoint - use token-endpoint if provided, otherwise use default
 if [ -n "${TOKEN_ENDPOINT}" ] && [ "${TOKEN_ENDPOINT}" != "https://auth.us.kusari.cloud/oauth2/token" ]; then
   # Extract base domain from token endpoint for custom auth endpoints
