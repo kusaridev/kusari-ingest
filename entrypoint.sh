@@ -79,6 +79,44 @@ if [ -z "${CLIENT_ID}" ] || [ -z ${CLIENT_SECRET} ]; then
   exit 1
 fi
 
+# Auto-detect repository traceability metadata from GitHub environment variables
+# GITHUB_SERVER_URL: https://github.com or https://github.enterprise.com
+# GITHUB_REPOSITORY_OWNER: organization or user name
+# GITHUB_REPOSITORY: owner/repo format
+
+# Extract forge hostname from GITHUB_SERVER_URL (e.g., https://github.com -> github.com)
+FORGE=""
+if [ -n "${GITHUB_SERVER_URL}" ]; then
+  FORGE=$(echo "${GITHUB_SERVER_URL}" | sed -E 's|^https?://||' | sed -E 's|/.*$||')
+fi
+
+# Use GITHUB_REPOSITORY_OWNER for org
+ORG="${GITHUB_REPOSITORY_OWNER:-}"
+
+# Extract just the repo name from GITHUB_REPOSITORY (format: owner/repo -> repo)
+REPO=""
+if [ -n "${GITHUB_REPOSITORY}" ]; then
+  REPO="${GITHUB_REPOSITORY#*/}"
+fi
+
+# Auto-derive subrepo path from file-path
+SUBREPO_PATH=""
+if [ -n "${FILE_PATH}" ]; then
+  if [ -d "${FILE_PATH}" ]; then
+    # FILE_PATH is a directory, use it as subrepo path
+    SUBREPO_PATH="${FILE_PATH}"
+  else
+    # FILE_PATH is a file, extract the directory portion
+    SUBREPO_PATH=$(dirname "${FILE_PATH}")
+  fi
+  # Normalize: remove leading ./ and trailing /
+  SUBREPO_PATH=$(echo "${SUBREPO_PATH}" | sed -E 's|^\./||' | sed -E 's|/$||')
+  # If empty or just ".", set to "."
+  if [ -z "${SUBREPO_PATH}" ] || [ "${SUBREPO_PATH}" = "." ]; then
+    SUBREPO_PATH="."
+  fi
+fi
+
 # Set auth endpoint - use token-endpoint if provided, otherwise use default
 if [ -n "${TOKEN_ENDPOINT}" ] && [ "${TOKEN_ENDPOINT}" != "https://auth.us.kusari.cloud/oauth2/token" ]; then
   # Extract base domain from token endpoint for custom auth endpoints
@@ -153,6 +191,22 @@ if [ "${WAIT}" = "false" ]; then
   set -- "$@" --wait=false
 else
   set -- "$@" --wait
+fi
+
+if [ -n "${FORGE}" ]; then
+  set -- "$@" --forge="${FORGE}"
+fi
+
+if [ -n "${ORG}" ]; then
+  set -- "$@" --org="${ORG}"
+fi
+
+if [ -n "${REPO}" ]; then
+  set -- "$@" --repo="${REPO}"
+fi
+
+if [ -n "${SUBREPO_PATH}" ]; then
+  set -- "$@" --subrepo-path="${SUBREPO_PATH}"
 fi
 
 # Execute the command
