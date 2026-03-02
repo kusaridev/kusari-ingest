@@ -92,6 +92,19 @@ steps:
 
 **Optional** - Wait for ingestion status. When set to `true`, the action will wait for the ingestion process to complete and report the final status. When set to `false`, the action will return immediately after uploading without waiting for processing to complete. Default: `true`
 
+## Automatic Repository Traceability
+
+The action automatically captures repository metadata to enable traceability for dependency updates and code changes:
+
+| Metadata | Source | Example |
+|----------|--------|---------|
+| `forge` | GitHub server URL | `github.com` or `github.enterprise.com` |
+| `org` | Repository owner | `kusaridev` |
+| `repo` | Repository name | `kusari-ingest` |
+| `subrepo_path` | Derived from `file-path` | `app/frontend` (from `app/frontend/sbom.json`) |
+
+This metadata is automatically attached to uploaded SBOMs without any additional configuration.
+
 ## Outputs
 
 ### `console_out`
