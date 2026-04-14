@@ -59,6 +59,10 @@ inputs:
     description: 'SBOM Subject Version override (optional, for SBOMs only)'
     required: false
     default: ""
+  commit-sha:
+    description: 'Commit SHA to associate with the uploaded document (optional)'
+    required: false
+    default: ${{ github.sha }}
   wait:
     description: 'Wait for ingestion status (default: true)'
     required: false
@@ -85,4 +89,5 @@ runs:
     - "--check-blocked-packages=${{ inputs.check-blocked-packages }}"
     - "--sbom-subject-name-override=${{ inputs.sbom-subject-name-override }}"
     - "--sbom-subject-version-override=${{ inputs.sbom-subject-version-override }}"
+    - "--commit-sha=${{ inputs.commit-sha }}"
     - "--wait=${{ inputs.wait }}"

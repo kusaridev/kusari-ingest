@@ -18,6 +18,7 @@ CHECK_BLOCKED_PACKAGES="false"
 SBOM_SUBJECT_NAME_OVERRIDE=""
 SBOM_SUBJECT_VERSION_OVERRIDE=""
 WAIT="true"
+COMMIT_SHA=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -68,6 +69,9 @@ while [ $# -gt 0 ]; do
       ;;
     --wait=*)
       WAIT="${1#*=}"
+      ;;
+    --commit-sha=*)
+      COMMIT_SHA="${1#*=}"
       ;;
   esac
   shift
@@ -185,6 +189,10 @@ fi
 
 if [ -n "${SBOM_SUBJECT_VERSION_OVERRIDE}" ]; then
   set -- "$@" --sbom-subject-version-override="${SBOM_SUBJECT_VERSION_OVERRIDE}"
+fi
+
+if [ -n "${COMMIT_SHA}" ]; then
+  set -- "$@" --commit-sha="${COMMIT_SHA}"
 fi
 
 if [ "${WAIT}" = "false" ]; then

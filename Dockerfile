@@ -1,5 +1,5 @@
 # Using kusari-cli for upload functionality
-FROM ghcr.io/kusaridev/kusari-cli@sha256:62af5cc9a5098ed119585c8066626e188cc8cce1cde9e423c5dafe6925306505 AS kusari
+FROM ghcr.io/kusaridev/kusari-cli@sha256:9ddb3c77d28ce89b701367a802fadef8f20370d7699bca7631c42560f2ec87d2 AS kusari
 
 # Use Chainguard wolfi-base as final base to provide shell environment
 FROM cgr.dev/chainguard/wolfi-base@sha256:0d8efc73b806c780206b69d62e1b8cb10e9e2eefa0e4452db81b9fa00b1a5175
