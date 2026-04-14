@@ -90,7 +90,7 @@ steps:
 
 ### `commit-sha`
 
-**Optional** - Commit SHA to associate with the uploaded document. Default: `""`
+**Optional** - Commit SHA to associate with the uploaded document. Default: `${{ github.sha }}`
 
 ### `wait`
 
