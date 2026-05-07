@@ -72,10 +72,6 @@ steps:
 
 **Optional** - Kusari Platform software SBOM subject substring value that uniquely indicates which software that the document applies to. Currently only used for OpenVex. Example: `kusari-ingest`
 
-### `component-name`
-
-**Optional** - Kusari Platform software component name (multiple SBOM subjects can belong to the same component). If a component with this name does not exist, it will be created. Default: `${{ github.event.repository.name }}`. Example: `kusari-ingest`
-
 ### `check-blocked-packages`
 
 **Optional** - Check SBOM dependencies against the Blocked Package list in the Kusari Platform. If a blocked package is found the program will terminate with a non-zero exit status, failing the job. Default: `false`

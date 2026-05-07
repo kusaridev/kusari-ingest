@@ -13,7 +13,6 @@ OPEN_VEX="false"
 TAG=""
 SOFTWARE_ID=""
 SBOM_SUBJECT=""
-COMPONENT_NAME=""
 CHECK_BLOCKED_PACKAGES="false"
 SBOM_SUBJECT_NAME_OVERRIDE=""
 SBOM_SUBJECT_VERSION_OVERRIDE=""
@@ -54,9 +53,6 @@ while [ $# -gt 0 ]; do
       ;;
     --sbom-subject=*)
       SBOM_SUBJECT="${1#*=}"
-      ;;
-    --component-name=*)
-      COMPONENT_NAME="${1#*=}"
       ;;
     --check-blocked-packages=*)
       CHECK_BLOCKED_PACKAGES="${1#*=}"
@@ -173,10 +169,6 @@ fi
 
 if [ -n "${SBOM_SUBJECT}" ]; then
   set -- "$@" --sbom-subject="${SBOM_SUBJECT}"
-fi
-
-if [ -n "${COMPONENT_NAME}" ]; then
-  set -- "$@" --component-name="${COMPONENT_NAME}"
 fi
 
 if [ "${CHECK_BLOCKED_PACKAGES}" = "true" ]; then
