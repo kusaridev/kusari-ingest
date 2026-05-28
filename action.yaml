@@ -7,8 +7,29 @@ branding:
 author: 'Kusari'
 inputs:
   file-path:
-    description: 'Path to directory or specific file to ingest'
-    required: true
+    description: 'Path to directory or specific file to ingest. Required unless generate is true.'
+    required: false
+    default: ""
+  generate:
+    description: 'Generate an SBOM with `kusari platform generate` (via mikebom) and upload it, instead of uploading an existing file.'
+    required: false
+    default: "false"
+  source-path:
+    description: 'Source path to scan when generate is true. Passed to mikebom as `--path`. Mutually exclusive with `image`. Defaults to the workspace root.'
+    required: false
+    default: "."
+  image:
+    description: 'Container image reference (OCI ref or `docker save` tarball path) to scan when generate is true. Passed to mikebom as `--image`. When set, overrides `source-path`.'
+    required: false
+    default: ""
+  output-path:
+    description: 'Path where the generated SBOM is written (used when generate is true). Passed to mikebom as `--output` and then used as the file to upload. Default matches mikebom''s CycloneDX default.'
+    required: false
+    default: "project.cdx.json"
+  mikebom-args:
+    description: 'Additional flags passed verbatim to `mikebom sbom scan` after `--` when generate is true. Avoid overriding `--output` here; use the `output-path` input instead.'
+    required: false
+    default: ""
   tenant-endpoint:
     description: 'Kusari Platform tenant api endpoint'
     required: true
@@ -86,3 +107,8 @@ runs:
     - "--sbom-subject-version-override=${{ inputs.sbom-subject-version-override }}"
     - "--commit-sha=${{ inputs.commit-sha }}"
     - "--wait=${{ inputs.wait }}"
+    - "--generate=${{ inputs.generate }}"
+    - "--source-path=${{ inputs.source-path }}"
+    - "--image=${{ inputs.image }}"
+    - "--output-path=${{ inputs.output-path }}"
+    - "--mikebom-args=${{ inputs.mikebom-args }}"

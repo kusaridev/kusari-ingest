@@ -26,11 +26,59 @@ steps:
       client-secret: ${{ secrets.KUSARI_CLIENT_SECRET }}
 ```
 
+### Generating an SBOM from source
+
+Set `generate: true` to have the action build a CycloneDX SBOM with `kusari platform generate` (mikebom) and upload it. No prebuilt SBOM file is required.
+
+```yaml
+  - uses: kusaridev/kusari-ingest@v0
+    name: Kusari Ingestion (generate)
+    with:
+      generate: true
+      source-path: '.'
+      tenant-endpoint: 'https://[kusari-tenant-id].api.us.kusari.cloud'
+      client-id: ${{ secrets.KUSARI_CLIENT_ID }}
+      client-secret: ${{ secrets.KUSARI_CLIENT_SECRET }}
+```
+
+Or scan a container image instead of a source tree:
+
+```yaml
+  - uses: kusaridev/kusari-ingest@v0
+    name: Kusari Ingestion (image)
+    with:
+      generate: true
+      image: 'ghcr.io/myorg/myapp:${{ github.sha }}'
+      tenant-endpoint: 'https://[kusari-tenant-id].api.us.kusari.cloud'
+      client-id: ${{ secrets.KUSARI_CLIENT_ID }}
+      client-secret: ${{ secrets.KUSARI_CLIENT_SECRET }}
+```
+
 ## Inputs
 
 ### `file-path`
 
-**Required** - Path to directory or specific file to ingest
+**Required** when `generate` is `false` (default). Ignored when `generate` is `true`. Path to directory or specific file to ingest.
+
+### `generate`
+
+**Optional** - When `true`, the action first runs `kusari platform generate` (via mikebom) on `source-path` to produce an SBOM, then uploads that SBOM. Default: `false`.
+
+### `source-path`
+
+**Optional** - Source path scanned by mikebom when `generate` is `true`. Passed as `--path`. Mutually exclusive with `image`. Default: `.`.
+
+### `image`
+
+**Optional** - Container image to scan when `generate` is `true`. Accepts an OCI reference (e.g. `ghcr.io/foo/bar:tag`) or the path to a `docker save` tarball. Passed to mikebom as `--image`. When set, overrides `source-path`. Default: `""`.
+
+### `output-path`
+
+**Optional** - Where the generated SBOM is written and what is uploaded afterwards. Passed to mikebom as `--output`. Default: `project.cdx.json`. Set this (and a matching format flag in `mikebom-args`) to produce SPDX, e.g. `project.spdx.json`.
+
+### `mikebom-args`
+
+**Optional** - Extra arguments appended verbatim to `mikebom sbom scan` after `--`. Do not override `--output` here; use `output-path` instead.
 
 ### `tenant-endpoint`
 

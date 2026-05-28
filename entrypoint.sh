@@ -18,6 +18,11 @@ SBOM_SUBJECT_NAME_OVERRIDE=""
 SBOM_SUBJECT_VERSION_OVERRIDE=""
 WAIT="true"
 COMMIT_SHA=""
+GENERATE="false"
+SOURCE_PATH="."
+IMAGE=""
+OUTPUT_PATH="project.cdx.json"
+MIKEBOM_ARGS=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -69,9 +74,30 @@ while [ $# -gt 0 ]; do
     --commit-sha=*)
       COMMIT_SHA="${1#*=}"
       ;;
+    --generate=*)
+      GENERATE="${1#*=}"
+      ;;
+    --source-path=*)
+      SOURCE_PATH="${1#*=}"
+      ;;
+    --image=*)
+      IMAGE="${1#*=}"
+      ;;
+    --output-path=*)
+      OUTPUT_PATH="${1#*=}"
+      ;;
+    --mikebom-args=*)
+      MIKEBOM_ARGS="${1#*=}"
+      ;;
   esac
   shift
 done
+
+# In upload mode, file-path is required. In generate mode it is unused.
+if [ "${GENERATE}" != "true" ] && [ -z "${FILE_PATH}" ]; then
+  echo "file-path is required when generate is not enabled"
+  exit 1
+fi
 
 # Fail if CLIENT_ID or CLIENT_SECRET is still empty
 if [ -z "${CLIENT_ID}" ] || [ -z ${CLIENT_SECRET} ]; then
@@ -99,9 +125,15 @@ if [ -n "${GITHUB_REPOSITORY}" ]; then
   REPO="${GITHUB_REPOSITORY#*/}"
 fi
 
-# Auto-derive subrepo path from file-path
+# Auto-derive subrepo path. In generate mode it tracks source-path (unless
+# we're scanning an image, in which case there is no meaningful subrepo);
+# otherwise it tracks file-path.
 SUBREPO_PATH=""
-if [ -n "${FILE_PATH}" ]; then
+if [ "${GENERATE}" = "true" ]; then
+  if [ -z "${IMAGE}" ]; then
+    SUBREPO_PATH="${SOURCE_PATH}"
+  fi
+elif [ -n "${FILE_PATH}" ]; then
   if [ -d "${FILE_PATH}" ]; then
     # FILE_PATH is a directory, use it as subrepo path
     SUBREPO_PATH="${FILE_PATH}"
@@ -109,6 +141,9 @@ if [ -n "${FILE_PATH}" ]; then
     # FILE_PATH is a file, extract the directory portion
     SUBREPO_PATH=$(dirname "${FILE_PATH}")
   fi
+fi
+
+if [ -n "${SUBREPO_PATH}" ]; then
   # Normalize: remove leading ./ and trailing /
   SUBREPO_PATH=$(echo "${SUBREPO_PATH}" | sed -E 's|^\./||' | sed -E 's|/$||')
   # If empty or just ".", set to "."
@@ -137,6 +172,27 @@ kusari auth login \
   --client-id="${CLIENT_ID}" \
   --client-secret="${CLIENT_SECRET}" \
   --auth-endpoint="${AUTH_ENDPOINT}"
+
+# In generate mode, produce the SBOM with mikebom first, then upload the
+# resulting file via the normal upload codepath below. mikebom requires
+# exactly one of --image or --path as the scan target.
+if [ "${GENERATE}" = "true" ]; then
+  if [ -n "${IMAGE}" ]; then
+    echo "Generating SBOM for image ${IMAGE} with kusari platform generate..."
+    SCAN_TARGET_FLAG="--image"
+    SCAN_TARGET_VALUE="${IMAGE}"
+  else
+    echo "Generating SBOM for source path ${SOURCE_PATH} with kusari platform generate..."
+    SCAN_TARGET_FLAG="--path"
+    SCAN_TARGET_VALUE="${SOURCE_PATH}"
+  fi
+  # shellcheck disable=SC2086
+  kusari platform generate -- \
+    --output "${OUTPUT_PATH}" \
+    "${SCAN_TARGET_FLAG}" "${SCAN_TARGET_VALUE}" \
+    ${MIKEBOM_ARGS}
+  FILE_PATH="${OUTPUT_PATH}"
+fi
 
 # Execute upload command
 echo "Uploading to Kusari Platform..."
