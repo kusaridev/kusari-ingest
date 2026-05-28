@@ -73,7 +73,7 @@ mikebom auto-derives the SBOM's subject name/version when it finds a recognizabl
 
 ### `file-path`
 
-**Required** when `generate` is `false` (default). Ignored when `generate` is `true`. Path to directory or specific file to ingest.
+**Required** when `generate` is `false` (default). Must be empty when `generate` is `true` — the action uploads the generated SBOM, not a pre-existing file. Path to directory or specific file to ingest.
 
 ### `generate`
 
@@ -97,11 +97,11 @@ mikebom auto-derives the SBOM's subject name/version when it finds a recognizabl
 
 ### `root-name`
 
-**Optional** - Passed to mikebom as `--root-name` when set. When left empty, mikebom uses its own auto-derivation. Default: `""`.
+**Optional** - Passed to mikebom as `--root-name` when set, so the generated SBOM's `metadata.component.name` reflects the value (rather than mikebom's generic fallback like `filesystem-scan`). When left empty, mikebom uses its own auto-derivation. To override only the value Kusari Platform reads at ingestion (without changing the SBOM file's contents), use `sbom-subject-name-override` instead. Default: `""`.
 
 ### `root-version`
 
-**Optional** - Passed to mikebom as `--root-version` when set. When left empty, mikebom uses its own auto-derivation. Default: `""`.
+**Optional** - Passed to mikebom as `--root-version` when set, so the generated SBOM's `metadata.component.version` reflects the value. When left empty, mikebom uses its own auto-derivation. To override only the value Kusari Platform reads at ingestion, use `sbom-subject-version-override` instead. Default: `""`.
 
 ### `tenant-endpoint`
 
@@ -149,11 +149,11 @@ mikebom auto-derives the SBOM's subject name/version when it finds a recognizabl
 
 ### `sbom-subject-name-override`
 
-**Optional** - SBOM Subject Name override (for SBOMs only). This allows you to override the subject name extracted from the SBOM document. Default: `""`
+**Optional** - SBOM Subject Name override (for SBOMs only). Overrides the subject name the Kusari Platform reads from the uploaded SBOM document at ingestion time; the SBOM file's own `metadata.component.name` is unchanged. To change what mikebom writes *inside* the generated SBOM, use `root-name` instead (generate mode only). Default: `""`
 
 ### `sbom-subject-version-override`
 
-**Optional** - SBOM Subject Version override (for SBOMs only). This allows you to override the subject version extracted from the SBOM document. Default: `""`
+**Optional** - SBOM Subject Version override (for SBOMs only). Overrides the subject version the Kusari Platform reads from the uploaded SBOM document at ingestion time; the SBOM file's own version field is unchanged. To change what mikebom writes *inside* the generated SBOM, use `root-version` instead (generate mode only). Default: `""`
 
 ### `commit-sha`
 

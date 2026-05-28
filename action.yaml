@@ -7,7 +7,7 @@ branding:
 author: 'Kusari'
 inputs:
   file-path:
-    description: 'Path to directory or specific file to ingest. Required unless generate is true.'
+    description: 'Path to directory or specific file to ingest. Required when generate is false; must be empty when generate is true (the action uploads the generated SBOM).'
     required: false
     default: ""
   generate:

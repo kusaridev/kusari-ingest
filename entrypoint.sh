@@ -1,5 +1,11 @@
 #!/bin/sh
 set -e
+# Disable pathname (glob) expansion. The script word-splits a few
+# user-supplied strings (notably ${MIKEBOM_ARGS}) by intentionally
+# leaving them unquoted; without -f those expansions would also be
+# globbed against the workspace, which would silently mutate the
+# user's flags based on what files happen to exist in cwd.
+set -f
 
 # Parse arguments
 FILE_PATH=""
@@ -109,8 +115,14 @@ fi
 
 # In generate mode, exactly one scan target must be supplied. Setting both
 # would silently let one win; setting neither would hand an empty --path to
-# mikebom. Reject both cases up front.
+# mikebom. Reject both cases up front. Also reject a stray file-path — the
+# action uploads the generated SBOM, so any file-path the caller set would
+# be silently dropped.
 if [ "${GENERATE}" = "true" ]; then
+  if [ -n "${FILE_PATH}" ]; then
+    echo "file-path must not be set when generate is true; the action uploads the generated SBOM"
+    exit 1
+  fi
   if [ -z "${IMAGE}" ] && [ -z "${SOURCE_PATH}" ]; then
     echo "one of image or source-path must be set when generate is true"
     exit 1
