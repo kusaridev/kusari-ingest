@@ -15,11 +15,11 @@ inputs:
     required: false
     default: "false"
   source-path:
-    description: 'Source path to scan when generate is true. Passed to mikebom as `--path`. Mutually exclusive with `image`. Defaults to the workspace root.'
+    description: 'Source path to scan when generate is true. Passed to mikebom as `--path`. Exactly one of `source-path` or `image` is required when generate is true.'
     required: false
-    default: "."
+    default: ""
   image:
-    description: 'Container image reference (OCI ref or `docker save` tarball path) to scan when generate is true. Passed to mikebom as `--image`. When set, overrides `source-path`.'
+    description: 'Container image reference (OCI ref or `docker save` tarball path) to scan when generate is true. Passed to mikebom as `--image`. Exactly one of `source-path` or `image` is required when generate is true.'
     required: false
     default: ""
   output-path:

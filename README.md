@@ -66,11 +66,11 @@ Or scan a container image instead of a source tree:
 
 ### `source-path`
 
-**Optional** - Source path scanned by mikebom when `generate` is `true`. Passed as `--path`. Mutually exclusive with `image`. Default: `.`.
+**Optional** - Source path scanned by mikebom when `generate` is `true`. Passed as `--path`. Exactly one of `source-path` or `image` is required when `generate` is `true`. Default: `""`.
 
 ### `image`
 
-**Optional** - Container image to scan when `generate` is `true`. Accepts an OCI reference (e.g. `ghcr.io/foo/bar:tag`) or the path to a `docker save` tarball. Passed to mikebom as `--image`. When set, overrides `source-path`. Default: `""`.
+**Optional** - Container image to scan when `generate` is `true`. Accepts an OCI reference (e.g. `ghcr.io/foo/bar:tag`) or the path to a `docker save` tarball. Passed to mikebom as `--image`. Exactly one of `source-path` or `image` is required when `generate` is `true`. Default: `""`.
 
 ### `output-path`
 
@@ -149,7 +149,7 @@ The action automatically captures repository metadata to enable traceability for
 | `forge` | GitHub server URL | `github.com` or `github.enterprise.com` |
 | `org` | Repository owner | `kusaridev` |
 | `repo` | Repository name | `kusari-ingest` |
-| `subrepo_path` | Derived from `file-path` | `app/frontend` (from `app/frontend/sbom.json`) |
+| `subrepo_path` | Derived from `file-path` in upload mode, from `source-path` in generate mode, and omitted in image mode | `app/frontend` (from `app/frontend/sbom.json`, or from `source-path: app/frontend`) |
 
 This metadata is automatically attached to uploaded SBOMs without any additional configuration.
 

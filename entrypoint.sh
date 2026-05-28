@@ -19,7 +19,7 @@ SBOM_SUBJECT_VERSION_OVERRIDE=""
 WAIT="true"
 COMMIT_SHA=""
 GENERATE="false"
-SOURCE_PATH="."
+SOURCE_PATH=""
 IMAGE=""
 OUTPUT_PATH="project.cdx.json"
 MIKEBOM_ARGS=""
@@ -98,6 +98,36 @@ if [ "${GENERATE}" != "true" ] && [ -z "${FILE_PATH}" ]; then
   echo "file-path is required when generate is not enabled"
   exit 1
 fi
+
+# In generate mode, exactly one scan target must be supplied. Setting both
+# would silently let one win; setting neither would hand an empty --path to
+# mikebom. Reject both cases up front.
+if [ "${GENERATE}" = "true" ]; then
+  if [ -z "${IMAGE}" ] && [ -z "${SOURCE_PATH}" ]; then
+    echo "one of image or source-path must be set when generate is true"
+    exit 1
+  fi
+  if [ -n "${IMAGE}" ] && [ -n "${SOURCE_PATH}" ]; then
+    echo "image and source-path are mutually exclusive; set only one when generate is true"
+    exit 1
+  fi
+fi
+
+# Users sometimes try to set mikebom's --output via mikebom-args; that
+# silently desyncs from the file the upload step expects. Refuse the
+# override and point them at the output-path input. Iterate the same way
+# the actual invocation does (unquoted word-splitting) so we catch the
+# flag regardless of which whitespace (spaces, tabs, newlines from a
+# multiline YAML scalar) separates the tokens.
+# shellcheck disable=SC2086
+for token in ${MIKEBOM_ARGS}; do
+  case "$token" in
+    --output|--output=*)
+      echo "mikebom-args must not contain --output; use the output-path input instead"
+      exit 1
+      ;;
+  esac
+done
 
 # Fail if CLIENT_ID or CLIENT_SECRET is still empty
 if [ -z "${CLIENT_ID}" ] || [ -z ${CLIENT_SECRET} ]; then
