@@ -54,6 +54,21 @@ Or scan a container image instead of a source tree:
       client-secret: ${{ secrets.KUSARI_CLIENT_SECRET }}
 ```
 
+mikebom auto-derives the SBOM's subject name/version when it finds a recognizable manifest (Cargo.toml, package.json, pom.xml, etc.), but falls back to generic names like `filesystem-scan` when scanning a container image or a directory without one. Set `root-name` / `root-version` to override the fallback:
+
+```yaml
+  - uses: kusaridev/kusari-ingest@v0
+    name: Kusari Ingestion (image, with root identity)
+    with:
+      generate: true
+      image: 'ghcr.io/myorg/myapp:${{ github.sha }}'
+      root-name: ${{ github.event.repository.name }}
+      root-version: ${{ github.ref_name }}@${{ github.sha }}
+      tenant-endpoint: 'https://[kusari-tenant-id].api.us.kusari.cloud'
+      client-id: ${{ secrets.KUSARI_CLIENT_ID }}
+      client-secret: ${{ secrets.KUSARI_CLIENT_SECRET }}
+```
+
 ## Inputs
 
 ### `file-path`
@@ -78,7 +93,15 @@ Or scan a container image instead of a source tree:
 
 ### `mikebom-args`
 
-**Optional** - Extra arguments appended verbatim to `mikebom sbom scan` after `--`. Do not override `--output` here; use `output-path` instead.
+**Optional** - Extra arguments appended verbatim to `mikebom sbom scan` after `--`. Do not pass `--output`, `--root-name`, or `--root-version` here; use the `output-path`, `root-name`, and `root-version` inputs instead — the action will error on the conflict.
+
+### `root-name`
+
+**Optional** - Passed to mikebom as `--root-name` when set. When left empty, mikebom uses its own auto-derivation. Default: `""`.
+
+### `root-version`
+
+**Optional** - Passed to mikebom as `--root-version` when set. When left empty, mikebom uses its own auto-derivation. Default: `""`.
 
 ### `tenant-endpoint`
 

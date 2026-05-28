@@ -23,6 +23,8 @@ SOURCE_PATH=""
 IMAGE=""
 OUTPUT_PATH="project.cdx.json"
 MIKEBOM_ARGS=""
+ROOT_NAME=""
+ROOT_VERSION=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -89,6 +91,12 @@ while [ $# -gt 0 ]; do
     --mikebom-args=*)
       MIKEBOM_ARGS="${1#*=}"
       ;;
+    --root-name=*)
+      ROOT_NAME="${1#*=}"
+      ;;
+    --root-version=*)
+      ROOT_VERSION="${1#*=}"
+      ;;
   esac
   shift
 done
@@ -124,6 +132,14 @@ for token in ${MIKEBOM_ARGS}; do
   case "$token" in
     --output|--output=*)
       echo "mikebom-args must not contain --output; use the output-path input instead"
+      exit 1
+      ;;
+    --root-name|--root-name=*)
+      echo "mikebom-args must not contain --root-name; use the root-name input instead"
+      exit 1
+      ;;
+    --root-version|--root-version=*)
+      echo "mikebom-args must not contain --root-version; use the root-version input instead"
       exit 1
       ;;
   esac
@@ -216,11 +232,17 @@ if [ "${GENERATE}" = "true" ]; then
     SCAN_TARGET_FLAG="--path"
     SCAN_TARGET_VALUE="${SOURCE_PATH}"
   fi
-  # shellcheck disable=SC2086
-  kusari platform generate -- \
+  set -- kusari platform generate -- \
     --output "${OUTPUT_PATH}" \
-    "${SCAN_TARGET_FLAG}" "${SCAN_TARGET_VALUE}" \
-    ${MIKEBOM_ARGS}
+    "${SCAN_TARGET_FLAG}" "${SCAN_TARGET_VALUE}"
+  if [ -n "${ROOT_NAME}" ]; then
+    set -- "$@" --root-name "${ROOT_NAME}"
+  fi
+  if [ -n "${ROOT_VERSION}" ]; then
+    set -- "$@" --root-version "${ROOT_VERSION}"
+  fi
+  # shellcheck disable=SC2086
+  "$@" ${MIKEBOM_ARGS}
   FILE_PATH="${OUTPUT_PATH}"
 fi
 

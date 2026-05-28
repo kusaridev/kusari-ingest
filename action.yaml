@@ -30,6 +30,14 @@ inputs:
     description: 'Additional flags passed verbatim to `mikebom sbom scan` after `--` when generate is true. Avoid overriding `--output` here; use the `output-path` input instead.'
     required: false
     default: ""
+  root-name:
+    description: 'mikebom `--root-name` value used when generate is true. When unset, mikebom uses its own auto-derivation.'
+    required: false
+    default: ""
+  root-version:
+    description: 'mikebom `--root-version` value used when generate is true. When unset, mikebom uses its own auto-derivation.'
+    required: false
+    default: ""
   tenant-endpoint:
     description: 'Kusari Platform tenant api endpoint'
     required: true
@@ -112,3 +120,5 @@ runs:
     - "--image=${{ inputs.image }}"
     - "--output-path=${{ inputs.output-path }}"
     - "--mikebom-args=${{ inputs.mikebom-args }}"
+    - "--root-name=${{ inputs.root-name }}"
+    - "--root-version=${{ inputs.root-version }}"
