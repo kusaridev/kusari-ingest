@@ -1,5 +1,11 @@
 #!/bin/sh
 set -e
+# Disable pathname (glob) expansion. The script word-splits a few
+# user-supplied strings (notably ${MIKEBOM_ARGS}) by intentionally
+# leaving them unquoted; without -f those expansions would also be
+# globbed against the workspace, which would silently mutate the
+# user's flags based on what files happen to exist in cwd.
+set -f
 
 # Parse arguments
 FILE_PATH=""
@@ -18,6 +24,13 @@ SBOM_SUBJECT_NAME_OVERRIDE=""
 SBOM_SUBJECT_VERSION_OVERRIDE=""
 WAIT="true"
 COMMIT_SHA=""
+GENERATE="false"
+SOURCE_PATH=""
+IMAGE=""
+OUTPUT_PATH="project.cdx.json"
+MIKEBOM_ARGS=""
+ROOT_NAME=""
+ROOT_VERSION=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -69,8 +82,79 @@ while [ $# -gt 0 ]; do
     --commit-sha=*)
       COMMIT_SHA="${1#*=}"
       ;;
+    --generate=*)
+      GENERATE="${1#*=}"
+      ;;
+    --source-path=*)
+      SOURCE_PATH="${1#*=}"
+      ;;
+    --image=*)
+      IMAGE="${1#*=}"
+      ;;
+    --output-path=*)
+      OUTPUT_PATH="${1#*=}"
+      ;;
+    --mikebom-args=*)
+      MIKEBOM_ARGS="${1#*=}"
+      ;;
+    --root-name=*)
+      ROOT_NAME="${1#*=}"
+      ;;
+    --root-version=*)
+      ROOT_VERSION="${1#*=}"
+      ;;
   esac
   shift
+done
+
+# In upload mode, file-path is required. In generate mode it is unused.
+if [ "${GENERATE}" != "true" ] && [ -z "${FILE_PATH}" ]; then
+  echo "file-path is required when generate is not enabled"
+  exit 1
+fi
+
+# In generate mode, exactly one scan target must be supplied. Setting both
+# would silently let one win; setting neither would hand an empty --path to
+# mikebom. Reject both cases up front. Also reject a stray file-path — the
+# action uploads the generated SBOM, so any file-path the caller set would
+# be silently dropped.
+if [ "${GENERATE}" = "true" ]; then
+  if [ -n "${FILE_PATH}" ]; then
+    echo "file-path must not be set when generate is true; the action uploads the generated SBOM"
+    exit 1
+  fi
+  if [ -z "${IMAGE}" ] && [ -z "${SOURCE_PATH}" ]; then
+    echo "one of image or source-path must be set when generate is true"
+    exit 1
+  fi
+  if [ -n "${IMAGE}" ] && [ -n "${SOURCE_PATH}" ]; then
+    echo "image and source-path are mutually exclusive; set only one when generate is true"
+    exit 1
+  fi
+fi
+
+# Users sometimes try to set mikebom's --output via mikebom-args; that
+# silently desyncs from the file the upload step expects. Refuse the
+# override and point them at the output-path input. Iterate the same way
+# the actual invocation does (unquoted word-splitting) so we catch the
+# flag regardless of which whitespace (spaces, tabs, newlines from a
+# multiline YAML scalar) separates the tokens.
+# shellcheck disable=SC2086
+for token in ${MIKEBOM_ARGS}; do
+  case "$token" in
+    --output|--output=*)
+      echo "mikebom-args must not contain --output; use the output-path input instead"
+      exit 1
+      ;;
+    --root-name|--root-name=*)
+      echo "mikebom-args must not contain --root-name; use the root-name input instead"
+      exit 1
+      ;;
+    --root-version|--root-version=*)
+      echo "mikebom-args must not contain --root-version; use the root-version input instead"
+      exit 1
+      ;;
+  esac
 done
 
 # Fail if CLIENT_ID or CLIENT_SECRET is still empty
@@ -99,9 +183,15 @@ if [ -n "${GITHUB_REPOSITORY}" ]; then
   REPO="${GITHUB_REPOSITORY#*/}"
 fi
 
-# Auto-derive subrepo path from file-path
+# Auto-derive subrepo path. In generate mode it tracks source-path (unless
+# we're scanning an image, in which case there is no meaningful subrepo);
+# otherwise it tracks file-path.
 SUBREPO_PATH=""
-if [ -n "${FILE_PATH}" ]; then
+if [ "${GENERATE}" = "true" ]; then
+  if [ -z "${IMAGE}" ]; then
+    SUBREPO_PATH="${SOURCE_PATH}"
+  fi
+elif [ -n "${FILE_PATH}" ]; then
   if [ -d "${FILE_PATH}" ]; then
     # FILE_PATH is a directory, use it as subrepo path
     SUBREPO_PATH="${FILE_PATH}"
@@ -109,6 +199,9 @@ if [ -n "${FILE_PATH}" ]; then
     # FILE_PATH is a file, extract the directory portion
     SUBREPO_PATH=$(dirname "${FILE_PATH}")
   fi
+fi
+
+if [ -n "${SUBREPO_PATH}" ]; then
   # Normalize: remove leading ./ and trailing /
   SUBREPO_PATH=$(echo "${SUBREPO_PATH}" | sed -E 's|^\./||' | sed -E 's|/$||')
   # If empty or just ".", set to "."
@@ -137,6 +230,33 @@ kusari auth login \
   --client-id="${CLIENT_ID}" \
   --client-secret="${CLIENT_SECRET}" \
   --auth-endpoint="${AUTH_ENDPOINT}"
+
+# In generate mode, produce the SBOM with mikebom first, then upload the
+# resulting file via the normal upload codepath below. mikebom requires
+# exactly one of --image or --path as the scan target.
+if [ "${GENERATE}" = "true" ]; then
+  if [ -n "${IMAGE}" ]; then
+    echo "Generating SBOM for image ${IMAGE} with kusari platform generate..."
+    SCAN_TARGET_FLAG="--image"
+    SCAN_TARGET_VALUE="${IMAGE}"
+  else
+    echo "Generating SBOM for source path ${SOURCE_PATH} with kusari platform generate..."
+    SCAN_TARGET_FLAG="--path"
+    SCAN_TARGET_VALUE="${SOURCE_PATH}"
+  fi
+  set -- kusari platform generate -- \
+    --output "${OUTPUT_PATH}" \
+    "${SCAN_TARGET_FLAG}" "${SCAN_TARGET_VALUE}"
+  if [ -n "${ROOT_NAME}" ]; then
+    set -- "$@" --root-name "${ROOT_NAME}"
+  fi
+  if [ -n "${ROOT_VERSION}" ]; then
+    set -- "$@" --root-version "${ROOT_VERSION}"
+  fi
+  # shellcheck disable=SC2086
+  "$@" ${MIKEBOM_ARGS}
+  FILE_PATH="${OUTPUT_PATH}"
+fi
 
 # Execute upload command
 echo "Uploading to Kusari Platform..."
