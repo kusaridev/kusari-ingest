@@ -226,10 +226,16 @@ if [ -n "${SUBREPO_PATH}" ]; then
   fi
 fi
 
-# Set auth endpoint - use token-endpoint if provided, otherwise use default
+# Set auth endpoint - use token-endpoint if provided, otherwise use default.
+# The CLI builds the token URL as "<auth-endpoint>oauth2/token", so the
+# auth-endpoint MUST retain its trailing slash (strip only "oauth2/token",
+# then guarantee a trailing slash).
 if [ -n "${TOKEN_ENDPOINT}" ] && [ "${TOKEN_ENDPOINT}" != "https://auth.us.kusari.cloud/oauth2/token" ]; then
-  # Extract base domain from token endpoint for custom auth endpoints
-  AUTH_ENDPOINT=$(echo "${TOKEN_ENDPOINT}" | sed 's|/oauth2/token||')
+  AUTH_ENDPOINT=$(echo "${TOKEN_ENDPOINT}" | sed 's|oauth2/token$||')
+  case "${AUTH_ENDPOINT}" in
+    */) ;;
+    *) AUTH_ENDPOINT="${AUTH_ENDPOINT}/" ;;
+  esac
 else
   # Use default auth endpoint
   AUTH_ENDPOINT="https://auth.us.kusari.cloud/"
