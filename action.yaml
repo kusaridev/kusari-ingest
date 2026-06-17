@@ -55,6 +55,14 @@ inputs:
     description: 'Kusari Platform auth token provider endpoint'
     required: true
     default: https://auth.us.kusari.cloud/oauth2/token
+  console-url:
+    description: 'Internal use only. Console URL override for non-production (e.g. dev) environments. Leave unset for production.'
+    required: false
+    default: ""
+  platform-url:
+    description: 'Internal use only. Platform API URL override for non-production (e.g. dev) environments. Leave unset for production.'
+    required: false
+    default: ""
   alias:
     description: 'Alias of the package for grouping'
     required: false
@@ -151,6 +159,8 @@ runs:
         INPUT_CLIENT_SECRET: ${{ inputs.client-secret }}
         INPUT_TENANT_ENDPOINT: ${{ inputs.tenant-endpoint }}
         INPUT_TOKEN_ENDPOINT: ${{ inputs.token-endpoint }}
+        INPUT_CONSOLE_URL: ${{ inputs.console-url }}
+        INPUT_PLATFORM_URL: ${{ inputs.platform-url }}
         INPUT_ALIAS: ${{ inputs.alias }}
         INPUT_DOCUMENT_TYPE: ${{ inputs.document-type }}
         INPUT_OPEN_VEX: ${{ inputs.open-vex }}
@@ -179,6 +189,8 @@ runs:
           --client-secret="${INPUT_CLIENT_SECRET}" \
           --tenant-endpoint="${INPUT_TENANT_ENDPOINT}" \
           --token-endpoint="${INPUT_TOKEN_ENDPOINT}" \
+          --console-url="${INPUT_CONSOLE_URL}" \
+          --platform-url="${INPUT_PLATFORM_URL}" \
           --alias="${INPUT_ALIAS}" \
           --document-type="${INPUT_DOCUMENT_TYPE}" \
           --open-vex="${INPUT_OPEN_VEX}" \

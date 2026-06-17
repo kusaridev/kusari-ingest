@@ -13,6 +13,8 @@ CLIENT_ID=""
 CLIENT_SECRET=""
 TENANT_ENDPOINT=""
 TOKEN_ENDPOINT="https://auth.us.kusari.cloud/oauth2/token"
+CONSOLE_URL=""
+PLATFORM_URL=""
 ALIAS=""
 DOCUMENT_TYPE=""
 OPEN_VEX="false"
@@ -49,6 +51,12 @@ while [ $# -gt 0 ]; do
       ;;
     --token-endpoint=*)
       TOKEN_ENDPOINT="${1#*=}"
+      ;;
+    --console-url=*)
+      CONSOLE_URL="${1#*=}"
+      ;;
+    --platform-url=*)
+      PLATFORM_URL="${1#*=}"
       ;;
     --alias=*)
       ALIAS="${1#*=}"
@@ -234,10 +242,19 @@ export HOME=$(mktemp -d)
 echo "Kusari CLI Version:"
 kusari --version
 echo "Logging in to Kusari..."
-kusari auth login \
+# console-url / platform-url are internal-use overrides for non-production
+# (e.g. dev) environments; unset means the CLI's production defaults.
+set -- kusari auth login \
   --client-id="${CLIENT_ID}" \
   --client-secret="${CLIENT_SECRET}" \
   --auth-endpoint="${AUTH_ENDPOINT}"
+if [ -n "${CONSOLE_URL}" ]; then
+  set -- "$@" --console-url="${CONSOLE_URL}"
+fi
+if [ -n "${PLATFORM_URL}" ]; then
+  set -- "$@" --platform-url="${PLATFORM_URL}"
+fi
+"$@"
 
 # In generate mode, produce the SBOM with mikebom first, then upload the
 # resulting file via the normal upload codepath below. mikebom requires
@@ -278,6 +295,16 @@ set -- kusari platform upload \
   --tenant-endpoint="${TENANT_ENDPOINT}"
 
 # Add optional parameters
+# console-url / platform-url are internal-use overrides for non-production
+# (e.g. dev) environments; unset means the CLI's production defaults.
+if [ -n "${CONSOLE_URL}" ]; then
+  set -- "$@" --console-url="${CONSOLE_URL}"
+fi
+
+if [ -n "${PLATFORM_URL}" ]; then
+  set -- "$@" --platform-url="${PLATFORM_URL}"
+fi
+
 if [ -n "${ALIAS}" ]; then
   set -- "$@" --alias="${ALIAS}"
 fi
