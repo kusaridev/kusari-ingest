@@ -38,6 +38,10 @@ inputs:
     description: 'mikebom `--root-version` value used when generate is true. When unset, mikebom uses its own auto-derivation.'
     required: false
     default: ""
+  no-root-purl:
+    description: 'When "true" and generate is true, pass `--no-root-purl` so mikebom emits no root purl. The resulting software has an empty pkg_type (matches syft container-image rows).'
+    required: false
+    default: "false"
   tenant-endpoint:
     description: 'Kusari Platform tenant api endpoint'
     required: true
@@ -122,3 +126,4 @@ runs:
     - "--mikebom-args=${{ inputs.mikebom-args }}"
     - "--root-name=${{ inputs.root-name }}"
     - "--root-version=${{ inputs.root-version }}"
+    - "--no-root-purl=${{ inputs.no-root-purl }}"

@@ -31,6 +31,7 @@ OUTPUT_PATH="project.cdx.json"
 MIKEBOM_ARGS=""
 ROOT_NAME=""
 ROOT_VERSION=""
+NO_ROOT_PURL="false"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -103,6 +104,9 @@ while [ $# -gt 0 ]; do
     --root-version=*)
       ROOT_VERSION="${1#*=}"
       ;;
+    --no-root-purl=*)
+      NO_ROOT_PURL="${1#*=}"
+      ;;
   esac
   shift
 done
@@ -152,6 +156,10 @@ for token in ${MIKEBOM_ARGS}; do
       ;;
     --root-version|--root-version=*)
       echo "mikebom-args must not contain --root-version; use the root-version input instead"
+      exit 1
+      ;;
+    --no-root-purl|--no-root-purl=*)
+      echo "mikebom-args must not contain --no-root-purl; use the no-root-purl input instead"
       exit 1
       ;;
   esac
@@ -252,6 +260,9 @@ if [ "${GENERATE}" = "true" ]; then
   fi
   if [ -n "${ROOT_VERSION}" ]; then
     set -- "$@" --root-version "${ROOT_VERSION}"
+  fi
+  if [ "${NO_ROOT_PURL}" = "true" ]; then
+    set -- "$@" --no-root-purl
   fi
   # shellcheck disable=SC2086
   "$@" ${MIKEBOM_ARGS}
