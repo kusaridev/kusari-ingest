@@ -99,31 +99,109 @@ inputs:
 outputs:
   console_out:
     description: 'Kusari Platform ingestion output'
+    value: ${{ steps.ingest.outputs.console_out }}
+
+# Composite action: the kusari CLI runs on the runner host rather than in an
+# isolated container. That lets mikebom use the runner's docker daemon and
+# registry credentials, so an `image:` passed as an OCI reference (e.g. one built
+# and pushed earlier in the same job) resolves locally — no tarball export and no
+# MIKEBOM_REGISTRY_* credentials to pass. Inputs and entrypoint.sh are unchanged,
+# so callers and the upload path behave exactly as before.
 runs:
-  using: 'docker'
-  image: 'Dockerfile'
-  args:
-    - "--file-path=${{ inputs.file-path }}"
-    - "--client-id=${{ inputs.client-id }}"
-    - "--client-secret=${{ inputs.client-secret }}"
-    - "--tenant-endpoint=${{ inputs.tenant-endpoint }}"
-    - "--token-endpoint=${{ inputs.token-endpoint }}"
-    - "--alias=${{ inputs.alias }}"
-    - "--document-type=${{ inputs.document-type }}"
-    - "--open-vex=${{ inputs.open-vex }}"
-    - "--tag=${{ inputs.tag }}"
-    - "--software-id=${{ inputs.software-id }}"
-    - "--sbom-subject=${{ inputs.sbom-subject }}"
-    - "--check-blocked-packages=${{ inputs.check-blocked-packages }}"
-    - "--sbom-subject-name-override=${{ inputs.sbom-subject-name-override }}"
-    - "--sbom-subject-version-override=${{ inputs.sbom-subject-version-override }}"
-    - "--commit-sha=${{ inputs.commit-sha }}"
-    - "--wait=${{ inputs.wait }}"
-    - "--generate=${{ inputs.generate }}"
-    - "--source-path=${{ inputs.source-path }}"
-    - "--image=${{ inputs.image }}"
-    - "--output-path=${{ inputs.output-path }}"
-    - "--mikebom-args=${{ inputs.mikebom-args }}"
-    - "--root-name=${{ inputs.root-name }}"
-    - "--root-version=${{ inputs.root-version }}"
-    - "--no-root-purl=${{ inputs.no-root-purl }}"
+  using: 'composite'
+  steps:
+    - name: Install kusari CLI
+      shell: bash
+      env:
+        KUSARI_CLI_VERSION: "2.4.0"   # keep in sync with kusari-cli releases
+      run: |
+        set -euo pipefail
+        case "${RUNNER_OS}" in
+          Linux) os=linux ;;
+          macOS) os=darwin ;;
+          *) echo "kusari-ingest: unsupported runner OS '${RUNNER_OS}'" >&2; exit 1 ;;
+        esac
+        case "${RUNNER_ARCH}" in
+          X64) arch=amd64 ;;
+          ARM64) arch=arm64 ;;
+          *) echo "kusari-ingest: unsupported runner arch '${RUNNER_ARCH}'" >&2; exit 1 ;;
+        esac
+        [ "${os}" = "darwin" ] && arch=all   # macOS ships a universal archive
+        asset="kusari-cli_${KUSARI_CLI_VERSION}_${os}_${arch}.tar.gz"
+        base="https://github.com/kusaridev/kusari-cli/releases/download/v${KUSARI_CLI_VERSION}"
+        tmp="$(mktemp -d)"
+        curl -fsSL -o "${tmp}/${asset}" "${base}/${asset}"
+        curl -fsSL -o "${tmp}/checksums.txt" "${base}/kusari-cli_${KUSARI_CLI_VERSION}_checksums.txt"
+        (cd "${tmp}" && grep " ${asset}\$" checksums.txt | shasum -a 256 -c -)
+        tar -xzf "${tmp}/${asset}" -C "${tmp}"
+        bin="$(find "${tmp}" -type f -name kusari | head -1)"
+        dest="${RUNNER_TEMP}/kusari-bin"
+        mkdir -p "${dest}"
+        mv "${bin}" "${dest}/kusari"
+        chmod +x "${dest}/kusari"
+        echo "${dest}" >> "${GITHUB_PATH}"
+    - name: Ingest
+      id: ingest
+      shell: bash
+      env:
+        # Pass inputs via env (not interpolated into the command) to avoid shell
+        # injection from input values.
+        INPUT_FILE_PATH: ${{ inputs.file-path }}
+        INPUT_CLIENT_ID: ${{ inputs.client-id }}
+        INPUT_CLIENT_SECRET: ${{ inputs.client-secret }}
+        INPUT_TENANT_ENDPOINT: ${{ inputs.tenant-endpoint }}
+        INPUT_TOKEN_ENDPOINT: ${{ inputs.token-endpoint }}
+        INPUT_ALIAS: ${{ inputs.alias }}
+        INPUT_DOCUMENT_TYPE: ${{ inputs.document-type }}
+        INPUT_OPEN_VEX: ${{ inputs.open-vex }}
+        INPUT_TAG: ${{ inputs.tag }}
+        INPUT_SOFTWARE_ID: ${{ inputs.software-id }}
+        INPUT_SBOM_SUBJECT: ${{ inputs.sbom-subject }}
+        INPUT_CHECK_BLOCKED_PACKAGES: ${{ inputs.check-blocked-packages }}
+        INPUT_SBOM_SUBJECT_NAME_OVERRIDE: ${{ inputs.sbom-subject-name-override }}
+        INPUT_SBOM_SUBJECT_VERSION_OVERRIDE: ${{ inputs.sbom-subject-version-override }}
+        INPUT_COMMIT_SHA: ${{ inputs.commit-sha }}
+        INPUT_WAIT: ${{ inputs.wait }}
+        INPUT_GENERATE: ${{ inputs.generate }}
+        INPUT_SOURCE_PATH: ${{ inputs.source-path }}
+        INPUT_IMAGE: ${{ inputs.image }}
+        INPUT_OUTPUT_PATH: ${{ inputs.output-path }}
+        INPUT_MIKEBOM_ARGS: ${{ inputs.mikebom-args }}
+        INPUT_ROOT_NAME: ${{ inputs.root-name }}
+        INPUT_ROOT_VERSION: ${{ inputs.root-version }}
+        INPUT_NO_ROOT_PURL: ${{ inputs.no-root-purl }}
+      run: |
+        set +e   # capture the ingestion output and exit code even on failure
+        log="${RUNNER_TEMP}/kusari-ingest-output.txt"
+        bash "${GITHUB_ACTION_PATH}/entrypoint.sh" \
+          --file-path="${INPUT_FILE_PATH}" \
+          --client-id="${INPUT_CLIENT_ID}" \
+          --client-secret="${INPUT_CLIENT_SECRET}" \
+          --tenant-endpoint="${INPUT_TENANT_ENDPOINT}" \
+          --token-endpoint="${INPUT_TOKEN_ENDPOINT}" \
+          --alias="${INPUT_ALIAS}" \
+          --document-type="${INPUT_DOCUMENT_TYPE}" \
+          --open-vex="${INPUT_OPEN_VEX}" \
+          --tag="${INPUT_TAG}" \
+          --software-id="${INPUT_SOFTWARE_ID}" \
+          --sbom-subject="${INPUT_SBOM_SUBJECT}" \
+          --check-blocked-packages="${INPUT_CHECK_BLOCKED_PACKAGES}" \
+          --sbom-subject-name-override="${INPUT_SBOM_SUBJECT_NAME_OVERRIDE}" \
+          --sbom-subject-version-override="${INPUT_SBOM_SUBJECT_VERSION_OVERRIDE}" \
+          --commit-sha="${INPUT_COMMIT_SHA}" \
+          --wait="${INPUT_WAIT}" \
+          --generate="${INPUT_GENERATE}" \
+          --source-path="${INPUT_SOURCE_PATH}" \
+          --image="${INPUT_IMAGE}" \
+          --output-path="${INPUT_OUTPUT_PATH}" \
+          --mikebom-args="${INPUT_MIKEBOM_ARGS}" \
+          --root-name="${INPUT_ROOT_NAME}" \
+          --root-version="${INPUT_ROOT_VERSION}" \
+          --no-root-purl="${INPUT_NO_ROOT_PURL}" 2>&1 | tee "${log}"
+        status=${PIPESTATUS[0]}
+        {
+          echo "console_out<<__KUSARI_OUT_EOF__"
+          cat "${log}"
+          echo "__KUSARI_OUT_EOF__"
+        } >> "${GITHUB_OUTPUT}"
+        exit "${status}"
