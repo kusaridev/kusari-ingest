@@ -241,6 +241,14 @@ else
   AUTH_ENDPOINT="https://auth.us.kusari.cloud/"
 fi
 
+# Preserve the runner's Docker credential location before relocating HOME.
+# We move HOME to a temp dir to isolate the kusari CLI's config, but mikebom
+# (generate mode) resolves registry credentials from $DOCKER_CONFIG, falling
+# back to $HOME/.docker. Without pinning DOCKER_CONFIG here, relocating HOME
+# hides the runner's `docker login` (e.g. ECR) and a remote image pull fails
+# with "401 ... no credentials are configured for this registry".
+export DOCKER_CONFIG="${DOCKER_CONFIG:-${HOME}/.docker}"
+
 # Create a temporary directory for kusari config
 export HOME=$(mktemp -d)
 
