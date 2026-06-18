@@ -13,6 +13,8 @@ CLIENT_ID=""
 CLIENT_SECRET=""
 TENANT_ENDPOINT=""
 TOKEN_ENDPOINT="https://auth.us.kusari.cloud/oauth2/token"
+CONSOLE_URL=""
+PLATFORM_URL=""
 ALIAS=""
 DOCUMENT_TYPE=""
 OPEN_VEX="false"
@@ -31,6 +33,7 @@ OUTPUT_PATH="project.cdx.json"
 MIKEBOM_ARGS=""
 ROOT_NAME=""
 ROOT_VERSION=""
+NO_ROOT_PURL="false"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -48,6 +51,12 @@ while [ $# -gt 0 ]; do
       ;;
     --token-endpoint=*)
       TOKEN_ENDPOINT="${1#*=}"
+      ;;
+    --console-url=*)
+      CONSOLE_URL="${1#*=}"
+      ;;
+    --platform-url=*)
+      PLATFORM_URL="${1#*=}"
       ;;
     --alias=*)
       ALIAS="${1#*=}"
@@ -103,6 +112,9 @@ while [ $# -gt 0 ]; do
     --root-version=*)
       ROOT_VERSION="${1#*=}"
       ;;
+    --no-root-purl=*)
+      NO_ROOT_PURL="${1#*=}"
+      ;;
   esac
   shift
 done
@@ -152,6 +164,10 @@ for token in ${MIKEBOM_ARGS}; do
       ;;
     --root-version|--root-version=*)
       echo "mikebom-args must not contain --root-version; use the root-version input instead"
+      exit 1
+      ;;
+    --no-root-purl|--no-root-purl=*)
+      echo "mikebom-args must not contain --no-root-purl; use the no-root-purl input instead"
       exit 1
       ;;
   esac
@@ -210,10 +226,16 @@ if [ -n "${SUBREPO_PATH}" ]; then
   fi
 fi
 
-# Set auth endpoint - use token-endpoint if provided, otherwise use default
+# Set auth endpoint - use token-endpoint if provided, otherwise use default.
+# The CLI builds the token URL as "<auth-endpoint>oauth2/token", so the
+# auth-endpoint MUST retain its trailing slash (strip only "oauth2/token",
+# then guarantee a trailing slash).
 if [ -n "${TOKEN_ENDPOINT}" ] && [ "${TOKEN_ENDPOINT}" != "https://auth.us.kusari.cloud/oauth2/token" ]; then
-  # Extract base domain from token endpoint for custom auth endpoints
-  AUTH_ENDPOINT=$(echo "${TOKEN_ENDPOINT}" | sed 's|/oauth2/token||')
+  AUTH_ENDPOINT=$(echo "${TOKEN_ENDPOINT}" | sed 's|oauth2/token$||')
+  case "${AUTH_ENDPOINT}" in
+    */) ;;
+    *) AUTH_ENDPOINT="${AUTH_ENDPOINT}/" ;;
+  esac
 else
   # Use default auth endpoint
   AUTH_ENDPOINT="https://auth.us.kusari.cloud/"
@@ -226,10 +248,19 @@ export HOME=$(mktemp -d)
 echo "Kusari CLI Version:"
 kusari --version
 echo "Logging in to Kusari..."
-kusari auth login \
+# console-url / platform-url are internal-use overrides for non-production
+# (e.g. dev) environments; unset means the CLI's production defaults.
+set -- kusari auth login \
   --client-id="${CLIENT_ID}" \
   --client-secret="${CLIENT_SECRET}" \
   --auth-endpoint="${AUTH_ENDPOINT}"
+if [ -n "${CONSOLE_URL}" ]; then
+  set -- "$@" --console-url="${CONSOLE_URL}"
+fi
+if [ -n "${PLATFORM_URL}" ]; then
+  set -- "$@" --platform-url="${PLATFORM_URL}"
+fi
+"$@"
 
 # In generate mode, produce the SBOM with mikebom first, then upload the
 # resulting file via the normal upload codepath below. mikebom requires
@@ -253,6 +284,9 @@ if [ "${GENERATE}" = "true" ]; then
   if [ -n "${ROOT_VERSION}" ]; then
     set -- "$@" --root-version "${ROOT_VERSION}"
   fi
+  if [ "${NO_ROOT_PURL}" = "true" ]; then
+    set -- "$@" --no-root-purl
+  fi
   # shellcheck disable=SC2086
   "$@" ${MIKEBOM_ARGS}
   FILE_PATH="${OUTPUT_PATH}"
@@ -267,6 +301,16 @@ set -- kusari platform upload \
   --tenant-endpoint="${TENANT_ENDPOINT}"
 
 # Add optional parameters
+# console-url / platform-url are internal-use overrides for non-production
+# (e.g. dev) environments; unset means the CLI's production defaults.
+if [ -n "${CONSOLE_URL}" ]; then
+  set -- "$@" --console-url="${CONSOLE_URL}"
+fi
+
+if [ -n "${PLATFORM_URL}" ]; then
+  set -- "$@" --platform-url="${PLATFORM_URL}"
+fi
+
 if [ -n "${ALIAS}" ]; then
   set -- "$@" --alias="${ALIAS}"
 fi
