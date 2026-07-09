@@ -121,7 +121,7 @@ runs:
     - name: Install kusari CLI
       shell: bash
       env:
-        KUSARI_CLI_VERSION: "2.5.0"   # keep in sync with kusari-cli releases
+        KUSARI_CLI_VERSION: "2.6.0"   # keep in sync with kusari-cli releases
       run: |
         set -euo pipefail
         case "${RUNNER_OS}" in
