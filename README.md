@@ -217,6 +217,18 @@ Raw output of the kusari CLI upload command
 
 Contents of the ingestion results JSON: `{"sboms": [...]}` with the `sbom_id`, `sbom_subject`, `software_id`, `software_name`, `component_id`, and `component_name` for each ingested SBOM. Populated whenever `wait` is `true` (the default); empty when `wait` is `false`. When `map-components` is `true`, the results (and the `results-file` contents) are updated after mapping, so they reflect the final component assignments rather than the pre-mapping state.
 
+## Testing
+
+Run the test suite locally:
+
+```sh
+bash test/run-tests.sh
+```
+
+The tests cover `map-components.sh` (skip/error/clean-map/conflict-fallback paths, suffix selection, results-file write-back), `entrypoint.sh` input validation, and a full end-to-end entrypoint run. They use the mock kusari CLI in `test/mock/` — no network access, credentials, or real tenant required. The only dependencies are `bash` and `jq`.
+
+To exercise `map-components.sh` by hand against the mock, put `test/mock` first on your `PATH`, point `MOCK_STATE` at a seeded state directory (see `reset_state` in `test/run-tests.sh` for the layout), and set the `RESULTS_FILE`, `TENANT_ENDPOINT`, and `HASH_FILE` environment variables the script expects.
+
 # License
 
 The scripts and documentation in this project are released under the [Apache License](LICENSE)

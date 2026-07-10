@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# Mock kusari CLI for testing map-components.sh and entrypoint.sh without a
+# real tenant. State lives in $MOCK_STATE (a directory):
+#   next-id                 - next component ID to hand out
+#   existing-names          - one component name per line
+#   name-to-id              - "<name> <id>" per line
+#   components-with-source  - component IDs that already have a source software
+#   sw-to-comp              - "<software-id> <component-id>" per line
+# Set MOCK_FAIL_ALL=1 to make every platform call fail (error-path testing).
+set -euo pipefail
+
+STATE="${MOCK_STATE:?MOCK_STATE must point to a state directory}"
+
+if [ "${1:-}" = "--version" ]; then
+  echo "kusari mock"
+  exit 0
+fi
+
+if [ "${MOCK_FAIL_ALL:-0}" = "1" ] && [ "${1:-}" = "platform" ]; then
+  echo "Error: 500 internal server error" >&2
+  exit 1
+fi
+
+case "${1:-} ${2:-} ${3:-}" in
+  "auth login "*)
+    echo "mock: logged in"
+    ;;
+  "platform upload "*)
+    rf=""
+    for a in "$@"; do case "$a" in --results-file=*) rf="${a#*=}" ;; esac; done
+    echo "mock upload: $*"
+    if [ -n "$rf" ]; then
+      cp "${MOCK_UPLOAD_RESULTS:?MOCK_UPLOAD_RESULTS must point to a results fixture}" "$rf"
+    fi
+    ;;
+  "platform components create")
+    name="$4"
+    if grep -qxF "$name" "$STATE/existing-names" 2>/dev/null; then
+      echo "Error: failed to create component: component with name \"$name\" already exists" >&2
+      exit 1
+    fi
+    id=$(cat "$STATE/next-id")
+    echo $((id + 1)) > "$STATE/next-id"
+    echo "$name" >> "$STATE/existing-names"
+    echo "$name $id" >> "$STATE/name-to-id"
+    echo "{\"id\": $id, \"name\": \"$name\"}"
+    ;;
+  "platform components list")
+    printf '{"components": ['
+    first=1
+    while read -r n i; do
+      [ $first -eq 0 ] && printf ','
+      printf '{"name": "%s", "id": %s}' "$n" "$i"
+      first=0
+    done < "$STATE/name-to-id"
+    printf ']}\n'
+    ;;
+  "platform components assign-software")
+    comp="$4"; sw="$5"
+    if grep -qx "$comp" "$STATE/components-with-source" 2>/dev/null; then
+      echo "Error: component already has a source software" >&2
+      exit 1
+    fi
+    echo "$comp" >> "$STATE/components-with-source"
+    echo "$sw $comp" >> "$STATE/sw-to-comp"
+    echo '{"status": "ok"}'
+    ;;
+  "platform software get")
+    sw="$4"
+    comp=$(awk -v s="$sw" '$1==s{print $2}' "$STATE/sw-to-comp" 2>/dev/null | tail -1)
+    echo "{\"id\": $sw, \"component_id\": ${comp:-null}}"
+    ;;
+  *)
+    echo "mock kusari: unhandled command: $*" >&2
+    exit 1
+    ;;
+esac
