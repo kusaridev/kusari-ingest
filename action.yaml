@@ -104,10 +104,21 @@ inputs:
     description: 'Wait for ingestion status (default: true)'
     required: false
     default: "true"
+  results-file:
+    description: 'Optional path to also write the machine-readable JSON ingestion results to (software and component IDs per ingested SBOM). The results are always available via the `results` output when wait is true; set this only when a downstream step needs the file on disk at a known path. Requires wait: true.'
+    required: false
+    default: ""
+  map-components:
+    description: 'When "true", after ingestion ensure each ingested software that is not already mapped to a Kusari component gets mapped automatically: create (or reuse) a component named after the software and assign the software to it. Requires wait: true (the default); implies a results file.'
+    required: false
+    default: "false"
 outputs:
   console_out:
     description: 'Kusari Platform ingestion output'
     value: ${{ steps.ingest.outputs.console_out }}
+  results:
+    description: 'Contents of the ingestion results JSON ({"sboms": [...]} with software/component IDs per ingested SBOM). Populated whenever wait is true (the default); empty when wait is false. When map-components is true, reflects the final post-mapping state.'
+    value: ${{ steps.ingest.outputs.results }}
 
 # Composite action: the kusari CLI runs on the runner host rather than in an
 # isolated container. That lets mikebom use the runner's docker daemon and
@@ -121,7 +132,7 @@ runs:
     - name: Install kusari CLI
       shell: bash
       env:
-        KUSARI_CLI_VERSION: "2.6.0"   # keep in sync with kusari-cli releases
+        KUSARI_CLI_VERSION: "2.7.0"   # keep in sync with kusari-cli releases
       run: |
         set -euo pipefail
         case "${RUNNER_OS}" in
@@ -180,9 +191,19 @@ runs:
         INPUT_ROOT_NAME: ${{ inputs.root-name }}
         INPUT_ROOT_VERSION: ${{ inputs.root-version }}
         INPUT_NO_ROOT_PURL: ${{ inputs.no-root-purl }}
+        INPUT_RESULTS_FILE: ${{ inputs.results-file }}
+        INPUT_MAP_COMPONENTS: ${{ inputs.map-components }}
       run: |
         set +e   # capture the ingestion output and exit code even on failure
         log="${RUNNER_TEMP}/kusari-ingest-output.txt"
+        # Always collect results when waiting (the CLI only produces them with
+        # --wait): the `results` output is populated unconditionally, and
+        # map-components consumes the same file. results-file input only
+        # overrides where the file lands for callers that want it on disk.
+        results_file="${INPUT_RESULTS_FILE}"
+        if [ -z "${results_file}" ] && [ "${INPUT_WAIT}" != "false" ]; then
+          results_file="${RUNNER_TEMP}/kusari-results.json"
+        fi
         bash "${GITHUB_ACTION_PATH}/entrypoint.sh" \
           --file-path="${INPUT_FILE_PATH}" \
           --client-id="${INPUT_CLIENT_ID}" \
@@ -209,11 +230,19 @@ runs:
           --mikebom-args="${INPUT_MIKEBOM_ARGS}" \
           --root-name="${INPUT_ROOT_NAME}" \
           --root-version="${INPUT_ROOT_VERSION}" \
-          --no-root-purl="${INPUT_NO_ROOT_PURL}" 2>&1 | tee "${log}"
+          --no-root-purl="${INPUT_NO_ROOT_PURL}" \
+          --results-file="${results_file}" \
+          --map-components="${INPUT_MAP_COMPONENTS}" 2>&1 | tee "${log}"
         status=${PIPESTATUS[0]}
         {
           echo "console_out<<__KUSARI_OUT_EOF__"
           cat "${log}"
           echo "__KUSARI_OUT_EOF__"
+          echo "results<<__KUSARI_RESULTS_EOF__"
+          if [ -n "${results_file}" ] && [ -f "${results_file}" ]; then
+            cat "${results_file}"
+            echo ""   # the CLI's JSON may lack a trailing newline; the heredoc delimiter needs its own line
+          fi
+          echo "__KUSARI_RESULTS_EOF__"
         } >> "${GITHUB_OUTPUT}"
         exit "${status}"

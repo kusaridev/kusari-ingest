@@ -34,6 +34,8 @@ MIKEBOM_ARGS=""
 ROOT_NAME=""
 ROOT_VERSION=""
 NO_ROOT_PURL="false"
+RESULTS_FILE=""
+MAP_COMPONENTS="false"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -115,6 +117,12 @@ while [ $# -gt 0 ]; do
     --no-root-purl=*)
       NO_ROOT_PURL="${1#*=}"
       ;;
+    --results-file=*)
+      RESULTS_FILE="${1#*=}"
+      ;;
+    --map-components=*)
+      MAP_COMPONENTS="${1#*=}"
+      ;;
   esac
   shift
 done
@@ -177,6 +185,32 @@ done
 if [ -z "${CLIENT_ID}" ] || [ -z ${CLIENT_SECRET} ]; then
   echo "CLIENT_ID or CLIENT_SECRET not provided"
   exit 1
+fi
+
+# The CLI's --results-file requires --wait: the software/component IDs only
+# exist once ingestion completes. Fail fast rather than after generate/upload
+# work has already run.
+if [ "${MAP_COMPONENTS}" = "true" ] && [ "${WAIT}" = "false" ]; then
+  echo "map-components requires wait; leave wait at its default (true)"
+  exit 1
+fi
+
+if [ -n "${RESULTS_FILE}" ] && [ "${WAIT}" = "false" ]; then
+  echo "results-file requires wait; leave wait at its default (true)"
+  exit 1
+fi
+
+if [ "${MAP_COMPONENTS}" = "true" ]; then
+  # The action supplies results-file automatically; this guards direct
+  # entrypoint.sh invocations.
+  if [ -z "${RESULTS_FILE}" ]; then
+    echo "map-components requires results-file"
+    exit 1
+  fi
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "map-components requires jq on the runner"
+    exit 1
+  fi
 fi
 
 # Auto-detect repository traceability metadata from GitHub environment variables
@@ -381,5 +415,29 @@ if [ -n "${SUBREPO_PATH}" ]; then
   set -- "$@" --subrepo-path="${SUBREPO_PATH}"
 fi
 
+if [ -n "${RESULTS_FILE}" ]; then
+  set -- "$@" --results-file="${RESULTS_FILE}"
+fi
+
 # Execute the command
 "$@"
+
+# Ensure every ingested software is mapped to a component. Runs only after a
+# successful upload (set -e aborts above otherwise). Uses the same HOME (CLI
+# auth config) and tenant endpoint as the upload.
+if [ "${MAP_COMPONENTS}" = "true" ]; then
+  # File backing the ingested SBOM, used for the fallback component-name hash
+  # suffix. Unset when file-path is a directory (multiple candidate files, no
+  # way to attribute one per SBOM) — the mapper falls back to sbom_id there.
+  HASH_FILE=""
+  if [ "${GENERATE}" = "true" ]; then
+    HASH_FILE="${OUTPUT_PATH}"
+  elif [ -f "${FILE_PATH}" ]; then
+    HASH_FILE="${FILE_PATH}"
+  fi
+  echo "Mapping ingested software to components..."
+  RESULTS_FILE="${RESULTS_FILE}" \
+  TENANT_ENDPOINT="${TENANT_ENDPOINT}" \
+  HASH_FILE="${HASH_FILE}" \
+    bash "$(dirname "$0")/map-components.sh"
+fi

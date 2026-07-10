@@ -69,6 +69,29 @@ mikebom auto-derives the SBOM's subject name/version when it finds a recognizabl
       client-secret: ${{ secrets.KUSARI_CLIENT_SECRET }}
 ```
 
+### Ingestion results and auto-mapping components
+
+Whenever `wait` is `true` (the default), the action captures machine-readable ingestion results — the software and component IDs for each ingested SBOM — and exposes them via the `results` output. No configuration needed. Set `map-components: true` to additionally ensure every ingested software is mapped to a Kusari component:
+
+```yaml
+  - uses: kusaridev/kusari-ingest@v0
+    id: ingest
+    name: Kusari Ingestion (with component mapping)
+    with:
+      file-path: './spdx.json'
+      map-components: true
+      tenant-endpoint: 'https://[kusari-tenant-id].api.us.kusari.cloud'
+      client-id: ${{ secrets.KUSARI_CLIENT_ID }}
+      client-secret: ${{ secrets.KUSARI_CLIENT_SECRET }}
+
+  - name: Use the ingestion results
+    env:
+      RESULTS: ${{ steps.ingest.outputs.results }}
+    run: jq '.sboms[].software_id' <<<"$RESULTS"
+```
+
+With `map-components: true`, for each ingested SBOM whose software is not already mapped to a component the action creates a component named after the software (reusing an existing component with that name if one exists) and assigns the software to it. If the platform rejects the assignment because that component already has a source software, the action creates a fresh component named `<software-name>-<suffix>` instead, where the suffix is a short sha256 of the ingested SBOM file (or the sbom_id when `file-path` is a directory and the file can't be attributed). Each mapping is verified before the action succeeds.
+
 ## Inputs
 
 ### `file-path`
@@ -163,6 +186,14 @@ mikebom auto-derives the SBOM's subject name/version when it finds a recognizabl
 
 **Optional** - Wait for ingestion status. When set to `true`, the action will wait for the ingestion process to complete and report the final status. When set to `false`, the action will return immediately after uploading without waiting for processing to complete. Default: `true`
 
+### `results-file`
+
+**Optional** - Path to also write the ingestion results JSON to. The results are always available via the `results` output when `wait` is `true`; set this only when a downstream step needs the file on disk at a known path (e.g. to upload it as an artifact). Requires `wait: true` (the default). Default: `""`
+
+### `map-components`
+
+**Optional** - When `true`, after ingestion the action ensures every ingested software is mapped to a Kusari component: it creates (or reuses) a component named after the software and assigns the software to it, then verifies the mapping. See [Ingestion results and auto-mapping components](#ingestion-results-and-auto-mapping-components). Requires `wait: true` (the default) and `jq` on the runner (preinstalled on GitHub-hosted runners). Default: `false`
+
 ## Automatic Repository Traceability
 
 The action automatically captures repository metadata to enable traceability for dependency updates and code changes:
@@ -181,6 +212,10 @@ This metadata is automatically attached to uploaded SBOMs without any additional
 ### `console_out`
 
 Raw output of the kusari CLI upload command
+
+### `results`
+
+Contents of the ingestion results JSON: `{"sboms": [...]}` with the `sbom_id`, `sbom_subject`, `software_id`, `software_name`, `component_id`, and `component_name` for each ingested SBOM. Populated whenever `wait` is `true` (the default); empty when `wait` is `false`. When `map-components` is `true`, the results (and the `results-file` contents) are updated after mapping, so they reflect the final component assignments rather than the pre-mapping state.
 
 # License
 
