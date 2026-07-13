@@ -64,7 +64,7 @@ inputs:
     required: false
     default: ""
   alias:
-    description: 'Alias of the package for grouping'
+    description: 'DEPRECATED: not used by the Kusari platform; will be removed in a future release'
     required: false
     default: ""
   document-type:
@@ -109,7 +109,7 @@ inputs:
     required: false
     default: ""
   map-components:
-    description: 'When "true", after ingestion ensure each ingested software that is not already mapped to a Kusari component gets mapped automatically: create (or reuse) a component named after the software and assign the software to it. Requires wait: true (the default); implies a results file.'
+    description: 'When "true", passes --map-components to the kusari CLI: after ingestion, each ingested software not already mapped to a Kusari component gets mapped automatically — create (or reuse) a component named after the software and assign the software to it. Requires wait: true (the default).'
     required: false
     default: "false"
 outputs:
@@ -132,7 +132,7 @@ runs:
     - name: Install kusari CLI
       shell: bash
       env:
-        KUSARI_CLI_VERSION: "2.7.0"   # keep in sync with kusari-cli releases
+        KUSARI_CLI_VERSION: "2.8.0"   # keep in sync with kusari-cli releases; 2.8.0+ required for --map-components
       run: |
         set -euo pipefail
         case "${RUNNER_OS}" in

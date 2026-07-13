@@ -200,18 +200,6 @@ if [ -n "${RESULTS_FILE}" ] && [ "${WAIT}" = "false" ]; then
   exit 1
 fi
 
-if [ "${MAP_COMPONENTS}" = "true" ]; then
-  # The action supplies results-file automatically; this guards direct
-  # entrypoint.sh invocations.
-  if [ -z "${RESULTS_FILE}" ]; then
-    echo "map-components requires results-file"
-    exit 1
-  fi
-  if ! command -v jq >/dev/null 2>&1; then
-    echo "map-components requires jq on the runner"
-    exit 1
-  fi
-fi
 
 # Auto-detect repository traceability metadata from GitHub environment variables
 # GITHUB_SERVER_URL: https://github.com or https://github.enterprise.com
@@ -354,6 +342,7 @@ if [ -n "${PLATFORM_URL}" ]; then
 fi
 
 if [ -n "${ALIAS}" ]; then
+  echo "WARNING: the 'alias' input is deprecated: it is not used by the Kusari platform and will be removed in a future release." >&2
   set -- "$@" --alias="${ALIAS}"
 fi
 
@@ -419,25 +408,9 @@ if [ -n "${RESULTS_FILE}" ]; then
   set -- "$@" --results-file="${RESULTS_FILE}"
 fi
 
+if [ "${MAP_COMPONENTS}" = "true" ]; then
+  set -- "$@" --map-components
+fi
+
 # Execute the command
 "$@"
-
-# Ensure every ingested software is mapped to a component. Runs only after a
-# successful upload (set -e aborts above otherwise). Uses the same HOME (CLI
-# auth config) and tenant endpoint as the upload.
-if [ "${MAP_COMPONENTS}" = "true" ]; then
-  # File backing the ingested SBOM, used for the fallback component-name hash
-  # suffix. Unset when file-path is a directory (multiple candidate files, no
-  # way to attribute one per SBOM) — the mapper falls back to sbom_id there.
-  HASH_FILE=""
-  if [ "${GENERATE}" = "true" ]; then
-    HASH_FILE="${OUTPUT_PATH}"
-  elif [ -f "${FILE_PATH}" ]; then
-    HASH_FILE="${FILE_PATH}"
-  fi
-  echo "Mapping ingested software to components..."
-  RESULTS_FILE="${RESULTS_FILE}" \
-  TENANT_ENDPOINT="${TENANT_ENDPOINT}" \
-  HASH_FILE="${HASH_FILE}" \
-    bash "$(dirname "$0")/map-components.sh"
-fi

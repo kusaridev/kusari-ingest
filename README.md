@@ -90,7 +90,7 @@ Whenever `wait` is `true` (the default), the action captures machine-readable in
     run: jq '.sboms[].software_id' <<<"$RESULTS"
 ```
 
-With `map-components: true`, for each ingested SBOM whose software is not already mapped to a component the action creates a component named after the software (reusing an existing component with that name if one exists) and assigns the software to it. If the platform rejects the assignment because that component already has a source software, the action creates a fresh component named `<software-name>-<suffix>` instead, where the suffix is a short sha256 of the ingested SBOM file (or the sbom_id when `file-path` is a directory and the file can't be attributed). Each mapping is verified before the action succeeds.
+With `map-components: true`, the kusari CLI (`kusari platform upload --map-components`) ensures each ingested SBOM whose software is not already mapped to a component gets one: it creates a component named after the software (reusing an existing component with that name if one exists) and assigns the software to it. If the platform rejects the assignment because that component already has a source software, a fresh component named `<software-name>-<suffix>` is created instead, where the suffix is a short prefix of the ingested SBOM file's sha256. Each mapping is verified before the upload succeeds.
 
 ## Inputs
 
@@ -144,7 +144,7 @@ With `map-components: true`, for each ingested SBOM whose software is not alread
 
 ### `alias`
 
-**Optional** - Alias of the package for grouping. Default: `""`
+**Deprecated** - Not used by the Kusari platform; will be removed in a future release. Default: `""`
 
 ### `document-type`
 
@@ -192,7 +192,7 @@ With `map-components: true`, for each ingested SBOM whose software is not alread
 
 ### `map-components`
 
-**Optional** - When `true`, after ingestion the action ensures every ingested software is mapped to a Kusari component: it creates (or reuses) a component named after the software and assigns the software to it, then verifies the mapping. See [Ingestion results and auto-mapping components](#ingestion-results-and-auto-mapping-components). Requires `wait: true` (the default) and `jq` on the runner (preinstalled on GitHub-hosted runners). Default: `false`
+**Optional** - When `true`, passes `--map-components` to `kusari platform upload`: after ingestion, every ingested software gets mapped to a Kusari component — the CLI creates (or reuses) a component named after the software, assigns the software to it, then verifies the mapping. See [Ingestion results and auto-mapping components](#ingestion-results-and-auto-mapping-components). Requires `wait: true` (the default). Default: `false`
 
 ## Automatic Repository Traceability
 
@@ -215,7 +215,7 @@ Raw output of the kusari CLI upload command
 
 ### `results`
 
-Contents of the ingestion results JSON: `{"sboms": [...]}` with the `sbom_id`, `sbom_subject`, `software_id`, `software_name`, `component_id`, and `component_name` for each ingested SBOM. Populated whenever `wait` is `true` (the default); empty when `wait` is `false`. When `map-components` is `true`, the results (and the `results-file` contents) are updated after mapping, so they reflect the final component assignments rather than the pre-mapping state.
+Contents of the ingestion results JSON: `{"sboms": [...]}` with the `sbom_id`, `sbom_subject`, `file_path`, `software_id`, `software_name`, `component_id`, and `component_name` for each ingested SBOM. Populated whenever `wait` is `true` (the default); empty when `wait` is `false`. When `map-components` is `true`, the results (and the `results-file` contents) are updated after mapping, so they reflect the final component assignments rather than the pre-mapping state.
 
 ## Testing
 
@@ -225,9 +225,7 @@ Run the test suite locally:
 bash test/run-tests.sh
 ```
 
-The tests cover `map-components.sh` (skip/error/clean-map/conflict-fallback paths, suffix selection, results-file write-back), `entrypoint.sh` input validation, and a full end-to-end entrypoint run. They use the mock kusari CLI in `test/mock/` — no network access, credentials, or real tenant required. The only dependencies are `bash` and `jq`.
-
-To exercise `map-components.sh` by hand against the mock, put `test/mock` first on your `PATH`, point `MOCK_STATE` at a seeded state directory (see `reset_state` in `test/run-tests.sh` for the layout), and set the `RESULTS_FILE`, `TENANT_ENDPOINT`, and `HASH_FILE` environment variables the script expects.
+The tests cover `entrypoint.sh` input validation and flag plumbing (including `--results-file` and `--map-components` passthrough) using the mock kusari CLI in `test/mock/` — no network access, credentials, or real tenant required. The only dependencies are `bash` and `jq`. The component-mapping logic itself lives in the kusari CLI and is tested in the [kusari-cli](https://github.com/kusaridev/kusari-cli) repository.
 
 # License
 
