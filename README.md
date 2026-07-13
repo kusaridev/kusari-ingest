@@ -71,7 +71,7 @@ mikebom auto-derives the SBOM's subject name/version when it finds a recognizabl
 
 ### Ingestion results and auto-mapping components
 
-Whenever `wait` is `true` (the default), the action captures machine-readable ingestion results — the software and component IDs for each ingested SBOM — and exposes them via the `results` output. No configuration needed. Set `map-components: true` to additionally ensure every ingested software is mapped to a Kusari component:
+Set the `results-file` input (or `map-components: true`) to capture machine-readable ingestion results — the software and component IDs for each ingested SBOM — exposed via the `results` output. When neither is set, the post-ingestion ID lookups are skipped entirely so plain uploads stay as fast as before. Set `map-components: true` to additionally ensure every ingested software is mapped to a Kusari component:
 
 ```yaml
   - uses: kusaridev/kusari-ingest@v0
@@ -188,7 +188,7 @@ With `map-components: true`, the kusari CLI (`kusari platform upload --map-compo
 
 ### `results-file`
 
-**Optional** - Path to also write the ingestion results JSON to. The results are always available via the `results` output when `wait` is `true`; set this only when a downstream step needs the file on disk at a known path (e.g. to upload it as an artifact). Requires `wait: true` (the default). Default: `""`
+**Optional** - Path to write the ingestion results JSON to. Setting this (or `map-components: true`) also populates the `results` output; when neither is set the ID lookups are skipped entirely. Requires `wait: true` (the default). Default: `""`
 
 ### `map-components`
 
@@ -215,7 +215,7 @@ Raw output of the kusari CLI upload command
 
 ### `results`
 
-Contents of the ingestion results JSON: `{"sboms": [...]}` with the `sbom_id`, `sbom_subject`, `file_path`, `software_id`, `software_name`, `component_id`, and `component_name` for each ingested SBOM. Populated whenever `wait` is `true` (the default); empty when `wait` is `false`. When `map-components` is `true`, the results (and the `results-file` contents) are updated after mapping, so they reflect the final component assignments rather than the pre-mapping state.
+Contents of the ingestion results JSON: `{"sboms": [...]}` with the `sbom_id`, `sbom_subject`, `file_path`, `software_id`, `software_name`, `component_id`, and `component_name` for each ingested SBOM. Populated only when the `results-file` input is set or `map-components` is `true`; empty otherwise. When `map-components` is `true`, the results (and the `results-file` contents) are updated after mapping, so they reflect the final component assignments rather than the pre-mapping state.
 
 ## Testing
 

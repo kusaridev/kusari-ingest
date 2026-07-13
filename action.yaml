@@ -105,7 +105,7 @@ inputs:
     required: false
     default: "true"
   results-file:
-    description: 'Optional path to also write the machine-readable JSON ingestion results to (software and component IDs per ingested SBOM). The results are always available via the `results` output when wait is true; set this only when a downstream step needs the file on disk at a known path. Requires wait: true.'
+    description: 'Path to write the machine-readable JSON ingestion results to (software and component IDs per ingested SBOM). Setting this (or map-components) also populates the `results` output; when neither is set the ID lookups are skipped entirely. Requires wait: true.'
     required: false
     default: ""
   map-components:
@@ -117,7 +117,7 @@ outputs:
     description: 'Kusari Platform ingestion output'
     value: ${{ steps.ingest.outputs.console_out }}
   results:
-    description: 'Contents of the ingestion results JSON ({"sboms": [...]} with software/component IDs per ingested SBOM). Populated whenever wait is true (the default); empty when wait is false. When map-components is true, reflects the final post-mapping state.'
+    description: 'Contents of the ingestion results JSON ({"sboms": [...]} with software/component IDs per ingested SBOM). Populated only when the results-file input is set or map-components is true; empty otherwise. When map-components is true, reflects the final post-mapping state.'
     value: ${{ steps.ingest.outputs.results }}
 
 # Composite action: the kusari CLI runs on the runner host rather than in an
@@ -196,12 +196,12 @@ runs:
       run: |
         set +e   # capture the ingestion output and exit code even on failure
         log="${RUNNER_TEMP}/kusari-ingest-output.txt"
-        # Always collect results when waiting (the CLI only produces them with
-        # --wait): the `results` output is populated unconditionally, and
-        # map-components consumes the same file. results-file input only
-        # overrides where the file lands for callers that want it on disk.
+        # Collect results only when a caller consumes them (results-file set,
+        # or map-components needs the post-mapping state). The ID lookups the
+        # CLI performs for the results add post-ingestion API calls, so runs
+        # that don't use the `results` output skip them entirely.
         results_file="${INPUT_RESULTS_FILE}"
-        if [ -z "${results_file}" ] && [ "${INPUT_WAIT}" != "false" ]; then
+        if [ -z "${results_file}" ] && [ "${INPUT_MAP_COMPONENTS}" = "true" ] && [ "${INPUT_WAIT}" != "false" ]; then
           results_file="${RUNNER_TEMP}/kusari-results.json"
         fi
         bash "${GITHUB_ACTION_PATH}/entrypoint.sh" \
