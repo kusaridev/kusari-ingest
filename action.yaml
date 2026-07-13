@@ -132,7 +132,7 @@ runs:
     - name: Install kusari CLI
       shell: bash
       env:
-        KUSARI_CLI_VERSION: "2.8.0"   # keep in sync with kusari-cli releases; 2.8.0+ required for --map-components
+        KUSARI_CLI_VERSION: "2.8.0"   # keep in sync with kusari-cli releases
       run: |
         set -euo pipefail
         case "${RUNNER_OS}" in
