@@ -2,7 +2,7 @@
 
 This Action ingests various artifacts (such as SBOMs, SLSA and other attestations)  into the [Kusari Platform](https://www.kusari.dev/) as part of your github workflow. This will enable quick and easy integration to your tenant with very minimal input.
 
-Authentication credentials (client-id, client-secret) are provided by the Kusari team.
+Authentication credentials (client-id, client-secret) are provided by the Kusari team. When using an [API key](https://docs.us.kusari.cloud/administration/api-keys), the key must be scoped with the `document_ingest` permission, plus `document_ingest_status_read` for `wait: true` (the default). Some optional inputs need more — see [available permissions](https://docs.us.kusari.cloud/administration/api-keys#available-permissions): `check-blocked-packages` and `results-file` also require `platform_data_read`, and `map-components` also requires `platform_data_read` and `platform_data_write`.
 
 For details on how to query and utilize the data upon ingestion, please see our [documentataion](https://docs.us.kusari.cloud/).
 
@@ -92,6 +92,8 @@ Set the `results-file` input (or `map-components: true`) to capture machine-read
 
 With `map-components: true`, the kusari CLI (`kusari platform upload --map-components`) ensures each ingested SBOM whose software is not already mapped to a component gets one: it creates a component named after the software (reusing an existing component with that name if one exists) and assigns the software to it. If the platform rejects the assignment because that component already has a source software, a fresh component named `<software-name>-<suffix>` is created instead, where the suffix is a short prefix of the ingested SBOM file's sha256. Each mapping is verified before the upload succeeds.
 
+> **API key permissions:** `results-file` requires a key scoped with `platform_data_read` (for the post-ingestion ID lookups). `map-components` requires both `platform_data_read` and `platform_data_write` — creating a component and assigning software to it are writes, while verifying the mapping and looking up existing components by name are reads, so `platform_data_read` alone is not enough. See [available permissions](https://docs.us.kusari.cloud/administration/api-keys#available-permissions).
+
 ## Inputs
 
 ### `file-path`
@@ -168,7 +170,7 @@ With `map-components: true`, the kusari CLI (`kusari platform upload --map-compo
 
 ### `check-blocked-packages`
 
-**Optional** - Check SBOM dependencies against the Blocked Package list in the Kusari Platform. If a blocked package is found the program will terminate with a non-zero exit status, failing the job. Default: `false`
+**Optional** - Check SBOM dependencies against the Blocked Package list in the Kusari Platform. If a blocked package is found the program will terminate with a non-zero exit status, failing the job. API keys additionally require the `platform_data_read` permission. Default: `false`
 
 ### `sbom-subject-name-override`
 
@@ -188,11 +190,11 @@ With `map-components: true`, the kusari CLI (`kusari platform upload --map-compo
 
 ### `results-file`
 
-**Optional** - Path to write the ingestion results JSON to. Setting this (or `map-components: true`) also populates the `results` output; when neither is set the ID lookups are skipped entirely. Requires `wait: true` (the default). Default: `""`
+**Optional** - Path to write the ingestion results JSON to. Setting this (or `map-components: true`) also populates the `results` output; when neither is set the ID lookups are skipped entirely. Requires `wait: true` (the default). API keys additionally require the `platform_data_read` permission. Default: `""`
 
 ### `map-components`
 
-**Optional** - When `true`, passes `--map-components` to `kusari platform upload`: after ingestion, every ingested software gets mapped to a Kusari component — the CLI creates (or reuses) a component named after the software, assigns the software to it, then verifies the mapping. See [Ingestion results and auto-mapping components](#ingestion-results-and-auto-mapping-components). Requires `wait: true` (the default). Default: `false`
+**Optional** - When `true`, passes `--map-components` to `kusari platform upload`: after ingestion, every ingested software gets mapped to a Kusari component — the CLI creates (or reuses) a component named after the software, assigns the software to it, then verifies the mapping. See [Ingestion results and auto-mapping components](#ingestion-results-and-auto-mapping-components). Requires `wait: true` (the default). API keys additionally require the `platform_data_read` and `platform_data_write` permissions. Default: `false`
 
 ## Automatic Repository Traceability
 
