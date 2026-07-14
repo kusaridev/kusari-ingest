@@ -34,6 +34,8 @@ MIKEBOM_ARGS=""
 ROOT_NAME=""
 ROOT_VERSION=""
 NO_ROOT_PURL="false"
+RESULTS_FILE=""
+MAP_COMPONENTS="false"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -115,6 +117,12 @@ while [ $# -gt 0 ]; do
     --no-root-purl=*)
       NO_ROOT_PURL="${1#*=}"
       ;;
+    --results-file=*)
+      RESULTS_FILE="${1#*=}"
+      ;;
+    --map-components=*)
+      MAP_COMPONENTS="${1#*=}"
+      ;;
   esac
   shift
 done
@@ -174,10 +182,24 @@ for token in ${MIKEBOM_ARGS}; do
 done
 
 # Fail if CLIENT_ID or CLIENT_SECRET is still empty
-if [ -z "${CLIENT_ID}" ] || [ -z ${CLIENT_SECRET} ]; then
+if [ -z "${CLIENT_ID}" ] || [ -z "${CLIENT_SECRET}" ]; then
   echo "CLIENT_ID or CLIENT_SECRET not provided"
   exit 1
 fi
+
+# The CLI's --results-file requires --wait: the software/component IDs only
+# exist once ingestion completes. Fail fast rather than after generate/upload
+# work has already run.
+if [ "${MAP_COMPONENTS}" = "true" ] && [ "${WAIT}" = "false" ]; then
+  echo "map-components requires wait; leave wait at its default (true)"
+  exit 1
+fi
+
+if [ -n "${RESULTS_FILE}" ] && [ "${WAIT}" = "false" ]; then
+  echo "results-file requires wait; leave wait at its default (true)"
+  exit 1
+fi
+
 
 # Auto-detect repository traceability metadata from GitHub environment variables
 # GITHUB_SERVER_URL: https://github.com or https://github.enterprise.com
@@ -320,6 +342,7 @@ if [ -n "${PLATFORM_URL}" ]; then
 fi
 
 if [ -n "${ALIAS}" ]; then
+  echo "WARNING: the 'alias' input is deprecated: it is not used by the Kusari platform and will be removed in a future release." >&2
   set -- "$@" --alias="${ALIAS}"
 fi
 
@@ -379,6 +402,14 @@ fi
 
 if [ -n "${SUBREPO_PATH}" ]; then
   set -- "$@" --subrepo-path="${SUBREPO_PATH}"
+fi
+
+if [ -n "${RESULTS_FILE}" ]; then
+  set -- "$@" --results-file="${RESULTS_FILE}"
+fi
+
+if [ "${MAP_COMPONENTS}" = "true" ]; then
+  set -- "$@" --map-components
 fi
 
 # Execute the command

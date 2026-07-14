@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Mock kusari CLI for testing entrypoint.sh without a real tenant.
+# Behavior:
+#   auth login          - prints a marker line
+#   platform upload     - prints its full argv (so tests can assert flag
+#                         passthrough) and copies $MOCK_UPLOAD_RESULTS to the
+#                         --results-file path when the flag is present. When
+#                         --map-components is passed and $MOCK_MAPPED_RESULTS
+#                         is set, that fixture is copied instead — simulating
+#                         the CLI updating the results with final component IDs.
+set -euo pipefail
+
+if [ "${1:-}" = "--version" ]; then
+  echo "kusari mock"
+  exit 0
+fi
+
+case "${1:-} ${2:-}" in
+  "auth login")
+    echo "mock: logged in"
+    ;;
+  "platform upload")
+    rf=""
+    map="false"
+    for a in "$@"; do
+      case "$a" in
+        --results-file=*) rf="${a#*=}" ;;
+        --map-components) map="true" ;;
+      esac
+    done
+    echo "mock upload: $*"
+    if [ -n "$rf" ]; then
+      if [ "$map" = "true" ] && [ -n "${MOCK_MAPPED_RESULTS:-}" ]; then
+        cp "$MOCK_MAPPED_RESULTS" "$rf"
+      else
+        cp "${MOCK_UPLOAD_RESULTS:?MOCK_UPLOAD_RESULTS must point to a results fixture}" "$rf"
+      fi
+    fi
+    ;;
+  *)
+    echo "mock kusari: unhandled command: $*" >&2
+    exit 1
+    ;;
+esac

@@ -69,6 +69,29 @@ mikebom auto-derives the SBOM's subject name/version when it finds a recognizabl
       client-secret: ${{ secrets.KUSARI_CLIENT_SECRET }}
 ```
 
+### Ingestion results and auto-mapping components
+
+Set the `results-file` input (or `map-components: true`) to capture machine-readable ingestion results — the software and component IDs for each ingested SBOM — exposed via the `results` output. When neither is set, the post-ingestion ID lookups are skipped entirely so plain uploads stay as fast as before. Set `map-components: true` to additionally ensure every ingested software is mapped to a Kusari component:
+
+```yaml
+  - uses: kusaridev/kusari-ingest@v0
+    id: ingest
+    name: Kusari Ingestion (with component mapping)
+    with:
+      file-path: './spdx.json'
+      map-components: true
+      tenant-endpoint: 'https://[kusari-tenant-id].api.us.kusari.cloud'
+      client-id: ${{ secrets.KUSARI_CLIENT_ID }}
+      client-secret: ${{ secrets.KUSARI_CLIENT_SECRET }}
+
+  - name: Use the ingestion results
+    env:
+      RESULTS: ${{ steps.ingest.outputs.results }}
+    run: jq '.sboms[].software_id' <<<"$RESULTS"
+```
+
+With `map-components: true`, the kusari CLI (`kusari platform upload --map-components`) ensures each ingested SBOM whose software is not already mapped to a component gets one: it creates a component named after the software (reusing an existing component with that name if one exists) and assigns the software to it. If the platform rejects the assignment because that component already has a source software, a fresh component named `<software-name>-<suffix>` is created instead, where the suffix is a short prefix of the ingested SBOM file's sha256. Each mapping is verified before the upload succeeds.
+
 ## Inputs
 
 ### `file-path`
@@ -121,7 +144,7 @@ mikebom auto-derives the SBOM's subject name/version when it finds a recognizabl
 
 ### `alias`
 
-**Optional** - Alias of the package for grouping. Default: `""`
+**Deprecated** - Not used by the Kusari platform; will be removed in a future release. Default: `""`
 
 ### `document-type`
 
@@ -163,6 +186,14 @@ mikebom auto-derives the SBOM's subject name/version when it finds a recognizabl
 
 **Optional** - Wait for ingestion status. When set to `true`, the action will wait for the ingestion process to complete and report the final status. When set to `false`, the action will return immediately after uploading without waiting for processing to complete. Default: `true`
 
+### `results-file`
+
+**Optional** - Path to write the ingestion results JSON to. Setting this (or `map-components: true`) also populates the `results` output; when neither is set the ID lookups are skipped entirely. Requires `wait: true` (the default). Default: `""`
+
+### `map-components`
+
+**Optional** - When `true`, passes `--map-components` to `kusari platform upload`: after ingestion, every ingested software gets mapped to a Kusari component — the CLI creates (or reuses) a component named after the software, assigns the software to it, then verifies the mapping. See [Ingestion results and auto-mapping components](#ingestion-results-and-auto-mapping-components). Requires `wait: true` (the default). Default: `false`
+
 ## Automatic Repository Traceability
 
 The action automatically captures repository metadata to enable traceability for dependency updates and code changes:
@@ -181,6 +212,20 @@ This metadata is automatically attached to uploaded SBOMs without any additional
 ### `console_out`
 
 Raw output of the kusari CLI upload command
+
+### `results`
+
+Contents of the ingestion results JSON: `{"sboms": [...]}` with the `sbom_id`, `sbom_subject`, `file_path`, `software_id`, `software_name`, `component_id`, and `component_name` for each ingested SBOM. Populated only when the `results-file` input is set or `map-components` is `true`; empty otherwise. When `map-components` is `true`, the results (and the `results-file` contents) are updated after mapping, so they reflect the final component assignments rather than the pre-mapping state. If the step fails partway (for example a mapping error after ingestion), `results` contains whatever the CLI wrote before failing — possibly pre-mapping or partially mapped state. Consumers that read `results` from a failed step (via `if: always()` or `continue-on-error`) should treat a `null` `component_id` as unmapped rather than assuming mapping completed.
+
+## Testing
+
+Run the test suite locally:
+
+```sh
+bash test/run-tests.sh
+```
+
+The tests cover `entrypoint.sh` input validation and flag plumbing (including `--results-file` and `--map-components` passthrough) using the mock kusari CLI in `test/mock/` — no network access, credentials, or real tenant required. The only dependencies are `bash` and `jq`. The component-mapping logic itself lives in the kusari CLI and is tested in the [kusari-cli](https://github.com/kusaridev/kusari-cli) repository.
 
 # License
 
