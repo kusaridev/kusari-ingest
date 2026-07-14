@@ -54,8 +54,9 @@ assert_not_contains() {
   fi
 }
 
+# bash, not sh: match how action.yaml invokes entrypoint.sh
 run_entrypoint() {
-  sh "$ENTRYPOINT" "$@" 2>&1
+  bash "$ENTRYPOINT" "$@" 2>&1
 }
 
 echo "=== entrypoint.sh validation ==="
@@ -82,7 +83,7 @@ run_e2e() {
   (cd "$WORK" && PATH="$MOCK_DIR:$PATH" \
     MOCK_UPLOAD_RESULTS="$WORK/upload-results.json" MOCK_MAPPED_RESULTS="$WORK/mapped-results.json" \
     GITHUB_SERVER_URL=https://github.com GITHUB_REPOSITORY_OWNER=kusaridev GITHUB_REPOSITORY=kusaridev/e2e \
-    sh "$ENTRYPOINT" \
+    bash "$ENTRYPOINT" \
       --file-path=e2e-sbom.json --client-id=a --client-secret=b \
       --tenant-endpoint=https://demo.api.us.kusari.cloud \
       "$@" 2>&1)

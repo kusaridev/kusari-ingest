@@ -215,7 +215,7 @@ Raw output of the kusari CLI upload command
 
 ### `results`
 
-Contents of the ingestion results JSON: `{"sboms": [...]}` with the `sbom_id`, `sbom_subject`, `file_path`, `software_id`, `software_name`, `component_id`, and `component_name` for each ingested SBOM. Populated only when the `results-file` input is set or `map-components` is `true`; empty otherwise. When `map-components` is `true`, the results (and the `results-file` contents) are updated after mapping, so they reflect the final component assignments rather than the pre-mapping state.
+Contents of the ingestion results JSON: `{"sboms": [...]}` with the `sbom_id`, `sbom_subject`, `file_path`, `software_id`, `software_name`, `component_id`, and `component_name` for each ingested SBOM. Populated only when the `results-file` input is set or `map-components` is `true`; empty otherwise. When `map-components` is `true`, the results (and the `results-file` contents) are updated after mapping, so they reflect the final component assignments rather than the pre-mapping state. If the step fails partway (for example a mapping error after ingestion), `results` contains whatever the CLI wrote before failing — possibly pre-mapping or partially mapped state. Consumers that read `results` from a failed step (via `if: always()` or `continue-on-error`) should treat a `null` `component_id` as unmapped rather than assuming mapping completed.
 
 ## Testing
 

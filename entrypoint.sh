@@ -182,7 +182,7 @@ for token in ${MIKEBOM_ARGS}; do
 done
 
 # Fail if CLIENT_ID or CLIENT_SECRET is still empty
-if [ -z "${CLIENT_ID}" ] || [ -z ${CLIENT_SECRET} ]; then
+if [ -z "${CLIENT_ID}" ] || [ -z "${CLIENT_SECRET}" ]; then
   echo "CLIENT_ID or CLIENT_SECRET not provided"
   exit 1
 fi
