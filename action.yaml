@@ -204,6 +204,13 @@ runs:
         else
           results_file=""                               # no consumer -> no lookups
         fi
+        # Remove any leftover file at the results path before ingesting: the
+        # synthesized path is fixed and RUNNER_TEMP persists across steps, so a
+        # run that fails before the CLI writes would otherwise republish a
+        # previous invocation's IDs as this run's `results`.
+        if [ -n "${results_file}" ]; then
+          rm -f "${results_file}"
+        fi
         bash "${GITHUB_ACTION_PATH}/entrypoint.sh" \
           --file-path="${INPUT_FILE_PATH}" \
           --client-id="${INPUT_CLIENT_ID}" \
