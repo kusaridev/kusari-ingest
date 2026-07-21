@@ -2,6 +2,9 @@
 # Mock kusari CLI for testing entrypoint.sh without a real tenant.
 # Behavior:
 #   auth login          - prints a marker line
+#   platform generate   - prints its full argv and writes a stub SBOM to the
+#                         --output path so the subsequent upload step has a
+#                         file to point at
 #   platform upload     - prints its full argv (so tests can assert flag
 #                         passthrough) and copies $MOCK_UPLOAD_RESULTS to the
 #                         --results-file path when the flag is present. When
@@ -18,6 +21,20 @@ fi
 case "${1:-} ${2:-}" in
   "auth login")
     echo "mock: logged in"
+    ;;
+  "platform generate")
+    out=""
+    prev=""
+    for a in "$@"; do
+      if [ "$prev" = "--output" ]; then
+        out="$a"
+      fi
+      prev="$a"
+    done
+    echo "mock generate: $*"
+    if [ -n "$out" ]; then
+      echo '{"bomFormat": "CycloneDX"}' > "$out"
+    fi
     ;;
   "platform upload")
     rf=""

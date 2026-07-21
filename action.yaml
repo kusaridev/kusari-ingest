@@ -11,35 +11,39 @@ inputs:
     required: false
     default: ""
   generate:
-    description: 'Generate an SBOM with `kusari platform generate` (via mikebom) and upload it, instead of uploading an existing file.'
+    description: 'Generate an SBOM with `kusari platform generate` (via waybill) and upload it, instead of uploading an existing file.'
     required: false
     default: "false"
   source-path:
-    description: 'Source path to scan when generate is true. Passed to mikebom as `--path`. Exactly one of `source-path` or `image` is required when generate is true.'
+    description: 'Source path to scan when generate is true. Passed to waybill as `--path`. Exactly one of `source-path` or `image` is required when generate is true.'
     required: false
     default: ""
   image:
-    description: 'Container image reference (OCI ref or `docker save` tarball path) to scan when generate is true. Passed to mikebom as `--image`. Exactly one of `source-path` or `image` is required when generate is true.'
+    description: 'Container image reference (OCI ref or `docker save` tarball path) to scan when generate is true. Passed to waybill as `--image`. Exactly one of `source-path` or `image` is required when generate is true.'
     required: false
     default: ""
   output-path:
-    description: 'Path where the generated SBOM is written (used when generate is true). Passed to mikebom as `--output` and then used as the file to upload. Default matches mikebom''s CycloneDX default.'
+    description: 'Path where the generated SBOM is written (used when generate is true). Passed to waybill as `--output` and then used as the file to upload. Default matches waybill''s CycloneDX default.'
     required: false
     default: "project.cdx.json"
+  waybill-args:
+    description: 'Additional flags passed verbatim to `waybill sbom scan` after `--` when generate is true. Avoid overriding `--output` here; use the `output-path` input instead.'
+    required: false
+    default: ""
   mikebom-args:
-    description: 'Additional flags passed verbatim to `mikebom sbom scan` after `--` when generate is true. Avoid overriding `--output` here; use the `output-path` input instead.'
+    description: 'DEPRECATED: mikebom was renamed to waybill; use `waybill-args` instead. Treated exactly like `waybill-args`, but ignored when `waybill-args` is also set. Will be removed in a future release.'
     required: false
     default: ""
   root-name:
-    description: 'mikebom `--root-name` value used when generate is true. When unset, mikebom uses its own auto-derivation.'
+    description: 'waybill `--root-name` value used when generate is true. When unset, waybill uses its own auto-derivation.'
     required: false
     default: ""
   root-version:
-    description: 'mikebom `--root-version` value used when generate is true. When unset, mikebom uses its own auto-derivation.'
+    description: 'waybill `--root-version` value used when generate is true. When unset, waybill uses its own auto-derivation.'
     required: false
     default: ""
   no-root-purl:
-    description: 'When "true" and generate is true, pass `--no-root-purl` so mikebom emits no root purl. The resulting software has an empty pkg_type (matches syft container-image rows).'
+    description: 'When "true" and generate is true, pass `--no-root-purl` so waybill emits no root purl. The resulting software has an empty pkg_type (matches syft container-image rows).'
     required: false
     default: "false"
   tenant-endpoint:
@@ -121,10 +125,10 @@ outputs:
     value: ${{ steps.ingest.outputs.results }}
 
 # Composite action: the kusari CLI runs on the runner host rather than in an
-# isolated container. That lets mikebom use the runner's docker daemon and
+# isolated container. That lets waybill use the runner's docker daemon and
 # registry credentials, so an `image:` passed as an OCI reference (e.g. one built
 # and pushed earlier in the same job) resolves locally — no tarball export and no
-# MIKEBOM_REGISTRY_* credentials to pass. Inputs and entrypoint.sh are unchanged,
+# WAYBILL_REGISTRY_* credentials to pass. Inputs and entrypoint.sh are unchanged,
 # so callers and the upload path behave exactly as before.
 runs:
   using: 'composite'
@@ -187,6 +191,7 @@ runs:
         INPUT_SOURCE_PATH: ${{ inputs.source-path }}
         INPUT_IMAGE: ${{ inputs.image }}
         INPUT_OUTPUT_PATH: ${{ inputs.output-path }}
+        INPUT_WAYBILL_ARGS: ${{ inputs.waybill-args }}
         INPUT_MIKEBOM_ARGS: ${{ inputs.mikebom-args }}
         INPUT_ROOT_NAME: ${{ inputs.root-name }}
         INPUT_ROOT_VERSION: ${{ inputs.root-version }}
@@ -234,6 +239,7 @@ runs:
           --source-path="${INPUT_SOURCE_PATH}" \
           --image="${INPUT_IMAGE}" \
           --output-path="${INPUT_OUTPUT_PATH}" \
+          --waybill-args="${INPUT_WAYBILL_ARGS}" \
           --mikebom-args="${INPUT_MIKEBOM_ARGS}" \
           --root-name="${INPUT_ROOT_NAME}" \
           --root-version="${INPUT_ROOT_VERSION}" \

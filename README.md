@@ -28,7 +28,7 @@ steps:
 
 ### Generating an SBOM from source
 
-Set `generate: true` to have the action build a CycloneDX SBOM with `kusari platform generate` (mikebom) and upload it. No prebuilt SBOM file is required.
+Set `generate: true` to have the action build a CycloneDX SBOM with `kusari platform generate` (waybill) and upload it. No prebuilt SBOM file is required.
 
 ```yaml
   - uses: kusaridev/kusari-ingest@v0
@@ -54,7 +54,7 @@ Or scan a container image instead of a source tree:
       client-secret: ${{ secrets.KUSARI_CLIENT_SECRET }}
 ```
 
-mikebom auto-derives the SBOM's subject name/version when it finds a recognizable manifest (Cargo.toml, package.json, pom.xml, etc.), but falls back to generic names like `filesystem-scan` when scanning a container image or a directory without one. Set `root-name` / `root-version` to override the fallback:
+waybill auto-derives the SBOM's subject name/version when it finds a recognizable manifest (Cargo.toml, package.json, pom.xml, etc.), but falls back to generic names like `filesystem-scan` when scanning a container image or a directory without one. Set `root-name` / `root-version` to override the fallback:
 
 ```yaml
   - uses: kusaridev/kusari-ingest@v0
@@ -102,31 +102,35 @@ With `map-components: true`, the kusari CLI (`kusari platform upload --map-compo
 
 ### `generate`
 
-**Optional** - When `true`, the action first runs `kusari platform generate` (via mikebom) on `source-path` to produce an SBOM, then uploads that SBOM. Default: `false`.
+**Optional** - When `true`, the action first runs `kusari platform generate` (via waybill) on `source-path` to produce an SBOM, then uploads that SBOM. Default: `false`.
 
 ### `source-path`
 
-**Optional** - Source path scanned by mikebom when `generate` is `true`. Passed as `--path`. Exactly one of `source-path` or `image` is required when `generate` is `true`. Default: `""`.
+**Optional** - Source path scanned by waybill when `generate` is `true`. Passed as `--path`. Exactly one of `source-path` or `image` is required when `generate` is `true`. Default: `""`.
 
 ### `image`
 
-**Optional** - Container image to scan when `generate` is `true`. Accepts an OCI reference (e.g. `ghcr.io/foo/bar:tag`) or the path to a `docker save` tarball. Passed to mikebom as `--image`. Exactly one of `source-path` or `image` is required when `generate` is `true`. Default: `""`.
+**Optional** - Container image to scan when `generate` is `true`. Accepts an OCI reference (e.g. `ghcr.io/foo/bar:tag`) or the path to a `docker save` tarball. Passed to waybill as `--image`. Exactly one of `source-path` or `image` is required when `generate` is `true`. Default: `""`.
 
 ### `output-path`
 
-**Optional** - Where the generated SBOM is written and what is uploaded afterwards. Passed to mikebom as `--output`. Default: `project.cdx.json`. Set this (and a matching format flag in `mikebom-args`) to produce SPDX, e.g. `project.spdx.json`.
+**Optional** - Where the generated SBOM is written and what is uploaded afterwards. Passed to waybill as `--output`. Default: `project.cdx.json`. Set this (and a matching format flag in `waybill-args`) to produce SPDX, e.g. `project.spdx.json`.
+
+### `waybill-args`
+
+**Optional** - Extra arguments appended verbatim to `waybill sbom scan` after `--`. Do not pass `--output`, `--root-name`, or `--root-version` here; use the `output-path`, `root-name`, and `root-version` inputs instead — the action will error on the conflict.
 
 ### `mikebom-args`
 
-**Optional** - Extra arguments appended verbatim to `mikebom sbom scan` after `--`. Do not pass `--output`, `--root-name`, or `--root-version` here; use the `output-path`, `root-name`, and `root-version` inputs instead — the action will error on the conflict.
+**Deprecated** - mikebom was renamed to waybill; use `waybill-args` instead. Kept for backwards compatibility and treated exactly like `waybill-args`, but ignored (with a warning) when `waybill-args` is also set. Will be removed in a future release. Default: `""`
 
 ### `root-name`
 
-**Optional** - Passed to mikebom as `--root-name` when set, so the generated SBOM's `metadata.component.name` reflects the value (rather than mikebom's generic fallback like `filesystem-scan`). When left empty, mikebom uses its own auto-derivation. To override only the value Kusari Platform reads at ingestion (without changing the SBOM file's contents), use `sbom-subject-name-override` instead. Default: `""`.
+**Optional** - Passed to waybill as `--root-name` when set, so the generated SBOM's `metadata.component.name` reflects the value (rather than waybill's generic fallback like `filesystem-scan`). When left empty, waybill uses its own auto-derivation. To override only the value Kusari Platform reads at ingestion (without changing the SBOM file's contents), use `sbom-subject-name-override` instead. Default: `""`.
 
 ### `root-version`
 
-**Optional** - Passed to mikebom as `--root-version` when set, so the generated SBOM's `metadata.component.version` reflects the value. When left empty, mikebom uses its own auto-derivation. To override only the value Kusari Platform reads at ingestion, use `sbom-subject-version-override` instead. Default: `""`.
+**Optional** - Passed to waybill as `--root-version` when set, so the generated SBOM's `metadata.component.version` reflects the value. When left empty, waybill uses its own auto-derivation. To override only the value Kusari Platform reads at ingestion, use `sbom-subject-version-override` instead. Default: `""`.
 
 ### `tenant-endpoint`
 
@@ -174,11 +178,11 @@ With `map-components: true`, the kusari CLI (`kusari platform upload --map-compo
 
 ### `sbom-subject-name-override`
 
-**Optional** - SBOM Subject Name override (for SBOMs only). Overrides the subject name the Kusari Platform reads from the uploaded SBOM document at ingestion time; the SBOM file's own `metadata.component.name` is unchanged. To change what mikebom writes *inside* the generated SBOM, use `root-name` instead (generate mode only). Default: `""`
+**Optional** - SBOM Subject Name override (for SBOMs only). Overrides the subject name the Kusari Platform reads from the uploaded SBOM document at ingestion time; the SBOM file's own `metadata.component.name` is unchanged. To change what waybill writes *inside* the generated SBOM, use `root-name` instead (generate mode only). Default: `""`
 
 ### `sbom-subject-version-override`
 
-**Optional** - SBOM Subject Version override (for SBOMs only). Overrides the subject version the Kusari Platform reads from the uploaded SBOM document at ingestion time; the SBOM file's own version field is unchanged. To change what mikebom writes *inside* the generated SBOM, use `root-version` instead (generate mode only). Default: `""`
+**Optional** - SBOM Subject Version override (for SBOMs only). Overrides the subject version the Kusari Platform reads from the uploaded SBOM document at ingestion time; the SBOM file's own version field is unchanged. To change what waybill writes *inside* the generated SBOM, use `root-version` instead (generate mode only). Default: `""`
 
 ### `commit-sha`
 
