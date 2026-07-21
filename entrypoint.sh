@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 # Disable pathname (glob) expansion. The script word-splits a few
-# user-supplied strings (notably ${MIKEBOM_ARGS}) by intentionally
+# user-supplied strings (notably ${WAYBILL_ARGS}) by intentionally
 # leaving them unquoted; without -f those expansions would also be
 # globbed against the workspace, which would silently mutate the
 # user's flags based on what files happen to exist in cwd.
@@ -30,6 +30,7 @@ GENERATE="false"
 SOURCE_PATH=""
 IMAGE=""
 OUTPUT_PATH="project.cdx.json"
+WAYBILL_ARGS=""
 MIKEBOM_ARGS=""
 ROOT_NAME=""
 ROOT_VERSION=""
@@ -105,6 +106,9 @@ while [ $# -gt 0 ]; do
     --output-path=*)
       OUTPUT_PATH="${1#*=}"
       ;;
+    --waybill-args=*)
+      WAYBILL_ARGS="${1#*=}"
+      ;;
     --mikebom-args=*)
       MIKEBOM_ARGS="${1#*=}"
       ;;
@@ -127,6 +131,21 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+# Backwards compatibility: mikebom was renamed to waybill, and the
+# mikebom-args input along with it. Accept the deprecated input as an alias,
+# with waybill-args winning when both are set. ARGS_INPUT_NAME tracks which
+# input supplied the value so validation errors name the one the user set.
+ARGS_INPUT_NAME="waybill-args"
+if [ -n "${MIKEBOM_ARGS}" ]; then
+  if [ -n "${WAYBILL_ARGS}" ]; then
+    echo "WARNING: both waybill-args and mikebom-args (deprecated) are set; using waybill-args and ignoring mikebom-args." >&2
+  else
+    echo "WARNING: the 'mikebom-args' input is deprecated; use 'waybill-args' instead. It will be removed in a future release." >&2
+    WAYBILL_ARGS="${MIKEBOM_ARGS}"
+    ARGS_INPUT_NAME="mikebom-args"
+  fi
+fi
+
 # In upload mode, file-path is required. In generate mode it is unused.
 if [ "${GENERATE}" != "true" ] && [ -z "${FILE_PATH}" ]; then
   echo "file-path is required when generate is not enabled"
@@ -135,7 +154,7 @@ fi
 
 # In generate mode, exactly one scan target must be supplied. Setting both
 # would silently let one win; setting neither would hand an empty --path to
-# mikebom. Reject both cases up front. Also reject a stray file-path — the
+# waybill. Reject both cases up front. Also reject a stray file-path — the
 # action uploads the generated SBOM, so any file-path the caller set would
 # be silently dropped.
 if [ "${GENERATE}" = "true" ]; then
@@ -153,29 +172,29 @@ if [ "${GENERATE}" = "true" ]; then
   fi
 fi
 
-# Users sometimes try to set mikebom's --output via mikebom-args; that
+# Users sometimes try to set waybill's --output via waybill-args; that
 # silently desyncs from the file the upload step expects. Refuse the
 # override and point them at the output-path input. Iterate the same way
 # the actual invocation does (unquoted word-splitting) so we catch the
 # flag regardless of which whitespace (spaces, tabs, newlines from a
 # multiline YAML scalar) separates the tokens.
 # shellcheck disable=SC2086
-for token in ${MIKEBOM_ARGS}; do
+for token in ${WAYBILL_ARGS}; do
   case "$token" in
     --output|--output=*)
-      echo "mikebom-args must not contain --output; use the output-path input instead"
+      echo "${ARGS_INPUT_NAME} must not contain --output; use the output-path input instead"
       exit 1
       ;;
     --root-name|--root-name=*)
-      echo "mikebom-args must not contain --root-name; use the root-name input instead"
+      echo "${ARGS_INPUT_NAME} must not contain --root-name; use the root-name input instead"
       exit 1
       ;;
     --root-version|--root-version=*)
-      echo "mikebom-args must not contain --root-version; use the root-version input instead"
+      echo "${ARGS_INPUT_NAME} must not contain --root-version; use the root-version input instead"
       exit 1
       ;;
     --no-root-purl|--no-root-purl=*)
-      echo "mikebom-args must not contain --no-root-purl; use the no-root-purl input instead"
+      echo "${ARGS_INPUT_NAME} must not contain --no-root-purl; use the no-root-purl input instead"
       exit 1
       ;;
   esac
@@ -264,7 +283,7 @@ else
 fi
 
 # Preserve the runner's Docker credential location before relocating HOME.
-# We move HOME to a temp dir to isolate the kusari CLI's config, but mikebom
+# We move HOME to a temp dir to isolate the kusari CLI's config, but waybill
 # (generate mode) resolves registry credentials from $DOCKER_CONFIG, falling
 # back to $HOME/.docker. Without pinning DOCKER_CONFIG here, relocating HOME
 # hides the runner's `docker login` (e.g. ECR) and a remote image pull fails
@@ -292,8 +311,8 @@ if [ -n "${PLATFORM_URL}" ]; then
 fi
 "$@"
 
-# In generate mode, produce the SBOM with mikebom first, then upload the
-# resulting file via the normal upload codepath below. mikebom requires
+# In generate mode, produce the SBOM with waybill first, then upload the
+# resulting file via the normal upload codepath below. waybill requires
 # exactly one of --image or --path as the scan target.
 if [ "${GENERATE}" = "true" ]; then
   if [ -n "${IMAGE}" ]; then
@@ -318,7 +337,7 @@ if [ "${GENERATE}" = "true" ]; then
     set -- "$@" --no-root-purl
   fi
   # shellcheck disable=SC2086
-  "$@" ${MIKEBOM_ARGS}
+  "$@" ${WAYBILL_ARGS}
   FILE_PATH="${OUTPUT_PATH}"
 fi
 
