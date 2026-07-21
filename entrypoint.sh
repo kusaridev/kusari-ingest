@@ -133,16 +133,16 @@ done
 
 # Backwards compatibility: mikebom was renamed to waybill, and the
 # mikebom-args input along with it. Accept the deprecated input as an alias,
-# with waybill-args winning when both are set. WAYBILL_ARGS_INPUT tracks which
+# with waybill-args winning when both are set. ARGS_INPUT_NAME tracks which
 # input supplied the value so validation errors name the one the user set.
-WAYBILL_ARGS_INPUT="waybill-args"
+ARGS_INPUT_NAME="waybill-args"
 if [ -n "${MIKEBOM_ARGS}" ]; then
   if [ -n "${WAYBILL_ARGS}" ]; then
     echo "WARNING: both waybill-args and mikebom-args (deprecated) are set; using waybill-args and ignoring mikebom-args." >&2
   else
     echo "WARNING: the 'mikebom-args' input is deprecated; use 'waybill-args' instead. It will be removed in a future release." >&2
     WAYBILL_ARGS="${MIKEBOM_ARGS}"
-    WAYBILL_ARGS_INPUT="mikebom-args"
+    ARGS_INPUT_NAME="mikebom-args"
   fi
 fi
 
@@ -182,19 +182,19 @@ fi
 for token in ${WAYBILL_ARGS}; do
   case "$token" in
     --output|--output=*)
-      echo "${WAYBILL_ARGS_INPUT} must not contain --output; use the output-path input instead"
+      echo "${ARGS_INPUT_NAME} must not contain --output; use the output-path input instead"
       exit 1
       ;;
     --root-name|--root-name=*)
-      echo "${WAYBILL_ARGS_INPUT} must not contain --root-name; use the root-name input instead"
+      echo "${ARGS_INPUT_NAME} must not contain --root-name; use the root-name input instead"
       exit 1
       ;;
     --root-version|--root-version=*)
-      echo "${WAYBILL_ARGS_INPUT} must not contain --root-version; use the root-version input instead"
+      echo "${ARGS_INPUT_NAME} must not contain --root-version; use the root-version input instead"
       exit 1
       ;;
     --no-root-purl|--no-root-purl=*)
-      echo "${WAYBILL_ARGS_INPUT} must not contain --no-root-purl; use the no-root-purl input instead"
+      echo "${ARGS_INPUT_NAME} must not contain --no-root-purl; use the no-root-purl input instead"
       exit 1
       ;;
   esac
