@@ -62,12 +62,14 @@ runs:
   steps:
     - name: Install kusari CLI
       shell: bash
-      # A failed install surfaces as a failed tag in the next step, which honors fail-on-error.
-      continue-on-error: ${{ inputs.fail-on-error != 'true' }}
       env:
         KUSARI_CLI_VERSION: "2.15.0"   # keep in sync with the root action.yaml
+        FAIL_ON_ERROR: ${{ inputs.fail-on-error == 'true' }}
       run: |
         set -euo pipefail
+        # Unless fail-on-error is true, a failed install passes; the next step
+        # then finds no CLI and reports it as a failed tag.
+        trap '[ $? -ne 0 ] && [ "${FAIL_ON_ERROR}" != "true" ] && exit 0' EXIT
         case "${RUNNER_OS}" in
           Linux) os=linux ;;
           macOS) os=darwin ;;

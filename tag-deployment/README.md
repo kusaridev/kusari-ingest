@@ -52,7 +52,7 @@ This tags both versions `environment=prod`. To record another kind of deployment
 
 ### Failures warn by default
 
-Tagging runs after the deploy, so by default a failed tag does not fail the job. When tagging fails (bad credentials, the API is down, an empty `sbom-id` or `sbom-version-id`), the run shows a "Deployment tag failed" warning with the CLI's error and the step passes. Set `fail-on-error: true` to fail the step instead.
+Tagging runs after the deploy, so by default a failed tag does not fail the job. When tagging fails (bad credentials, the API is down, the CLI could not be installed, an empty `sbom-id` or `sbom-version-id`), the run shows a "Deployment tag failed" warning with the CLI's error, and the step passes. The annotation shows on every run until the cause is fixed. Set `fail-on-error: true` to fail the step instead.
 
 If the source SBOM has no version to tag, the image version is still tagged, and the run shows a "Source SBOM not tagged" warning and adds the same line to the step summary. The step passes.
 
@@ -110,7 +110,7 @@ When using an [API key](https://docs.us.kusari.cloud/administration/api-keys), i
 
 ### `fail-on-error`
 
-**Optional** - When `true`, a failed tag fails the step. Otherwise it is a warning and the step passes. Default: `false`
+**Optional** - When `true`, a failed tag fails the step. Otherwise it is a warning and the step passes. See [Failures warn by default](#failures-warn-by-default). Default: `false`
 
 ## Outputs
 

@@ -173,11 +173,12 @@ out=$(run_tag)
 assert_eq "tag happy path exits 0" "0" "$?"
 assert_contains "commit lookup hits the git commits API for github.sha" \
   "https://api.github.com/repos/kusaridev/e2e/git/commits/abc123" "$out"
+assert_contains "commit lookup authenticates with github-token" "Authorization: Bearer gh-token" "$out"
 assert_contains "tag-deployment gets IDs, label, tenant and looked-up commit time" \
   "tag-deployment 42 99 prod --label=environment --tenant-endpoint=https://demo.api.us.kusari.cloud --commit-time=2026-10-01T12:00:00Z" "$out"
 assert_eq "result output holds the CLI's JSON" "created" \
   "$(sed '1d;$d' "$WORK/tag-output" | jq -r '.source.result')"
-assert_not_contains "no warnings on success" "::warning" "$out"
+assert_not_contains "no annotations on success" "title=" "$out"
 
 # --- CLI fails, fail-on-error at its default: warning, step passes (wrong code: failing the deploy) ---
 out=$(run_tag MOCK_TAG_ERROR="failed to move tag environment=prod on SBOM #42: 401 Unauthorized" \

@@ -32,6 +32,10 @@ if [ -z "${INPUT_SBOM_ID}" ] || [ -z "${INPUT_SBOM_VERSION_ID}" ]; then
   tag_failed "sbom-id and sbom-version-id are required. The root kusari-ingest action sets them only when results-file or map-components is set."
 fi
 
+if ! command -v kusari >/dev/null; then
+  tag_failed "The kusari CLI is not installed. See the Install kusari CLI step's log."
+fi
+
 commit_time="${INPUT_COMMIT_TIME}"
 if [ -z "${commit_time}" ]; then
   body="$(mktemp)"
