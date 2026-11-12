@@ -138,6 +138,75 @@ assert_contains "waybill-args wins when both set" "--waybill-wins" "$out"
 assert_not_contains "mikebom-args ignored when both set" "--mikebom-loses" "$out"
 assert_contains "both-set warning printed" "using waybill-args and ignoring mikebom-args" "$out"
 
+echo "=== tag-deployment/entrypoint.sh (mock CLI and curl) ==="
+
+cat > "$WORK/tagged.json" <<'EOF'
+{"label": "environment", "value": "prod",
+ "image": {"sbom_id": 42, "version_id": 99, "result": "created", "ended_version_ids": [98]},
+ "source": {"sbom_id": 7, "name": "app-src", "version_id": 70, "version_found_by": "commit", "result": "created", "ended_version_ids": []}}
+EOF
+cat > "$WORK/not-tagged.json" <<'EOF'
+{"label": "environment", "value": "prod",
+ "image": {"sbom_id": 42, "version_id": 99, "result": "created", "ended_version_ids": []},
+ "source": {"sbom_id": 7, "name": "app-src", "result": "not_tagged", "ended_version_ids": [], "message": "no version before the commit time"}}
+EOF
+echo '{"commit": {"committer": {"date": "2026-10-01T12:00:00Z"}}}' > "$WORK/commit.json"
+
+# Runs the tagging script as its action.yaml step does. Extra VAR=value
+# arguments override the inputs below.
+run_tag() {
+  : > "$WORK/tag-output" ; : > "$WORK/tag-summary"
+  (cd "$WORK" && env PATH="$MOCK_DIR:$PATH" \
+    GITHUB_OUTPUT="$WORK/tag-output" GITHUB_STEP_SUMMARY="$WORK/tag-summary" \
+    GITHUB_API_URL=https://api.github.com GITHUB_REPOSITORY=kusaridev/e2e GITHUB_SHA=abc123 \
+    MOCK_TAG_OUTPUT="$WORK/tagged.json" MOCK_CURL_BODY="$WORK/commit.json" \
+    INPUT_SBOM_ID=42 INPUT_SBOM_VERSION_ID=99 INPUT_VALUE=prod INPUT_LABEL=environment \
+    INPUT_COMMIT_TIME= INPUT_GITHUB_TOKEN=gh-token \
+    INPUT_TENANT_ENDPOINT=https://demo.api.us.kusari.cloud INPUT_CLIENT_ID=a INPUT_CLIENT_SECRET=b \
+    INPUT_TOKEN_ENDPOINT=https://auth.us.kusari.cloud/oauth2/token INPUT_CONSOLE_URL= INPUT_PLATFORM_URL= \
+    INPUT_FAIL_ON_ERROR=false \
+    "$@" bash "$REPO_DIR/tag-deployment/entrypoint.sh" 2>&1)
+}
+
+# --- happy path: commit time looked up, tagged, result output set ---
+out=$(run_tag)
+assert_eq "tag happy path exits 0" "0" "$?"
+assert_contains "commit lookup hits the commits API for github.sha" \
+  "https://api.github.com/repos/kusaridev/e2e/commits/abc123" "$out"
+assert_contains "tag-deployment gets IDs, label, tenant and looked-up commit time" \
+  "tag-deployment 42 99 prod --label=environment --tenant-endpoint=https://demo.api.us.kusari.cloud --commit-time=2026-10-01T12:00:00Z" "$out"
+assert_eq "result output holds the CLI's JSON" "created" \
+  "$(sed '1d;$d' "$WORK/tag-output" | jq -r '.source.result')"
+assert_not_contains "no warnings on success" "::warning" "$out"
+
+# --- CLI fails, fail-on-error at its default: warning, step passes (wrong code: failing the deploy) ---
+out=$(run_tag MOCK_TAG_ERROR="failed to move tag environment=prod on SBOM #42: 401 Unauthorized" \
+  INPUT_COMMIT_TIME=2026-09-30T08:00:00Z)
+assert_eq "failed tag passes by default" "0" "$?"
+assert_contains "failed tag warns with the CLI's error" \
+  "::warning title=Deployment tag failed::failed to move tag environment=prod on SBOM #42: 401 Unauthorized" "$out"
+assert_contains "commit-time input passed as is" "--commit-time=2026-09-30T08:00:00Z" "$out"
+assert_not_contains "commit-time input skips the API lookup" "mock curl" "$out"
+
+# --- same with fail-on-error: true (wrong code: ignoring fail-on-error) ---
+out=$(run_tag MOCK_TAG_ERROR="boom" INPUT_FAIL_ON_ERROR=true)
+assert_eq "failed tag fails with fail-on-error" "1" "$?"
+
+# --- source not tagged: warning and summary line in the CLI's wording (wrong code: missing it on exit 0) ---
+out=$(run_tag MOCK_TAG_OUTPUT="$WORK/not-tagged.json")
+assert_eq "not tagged source passes" "0" "$?"
+assert_contains "not tagged source warns" \
+  "::warning title=Source SBOM not tagged::Source SBOM 7 (app-src) was not tagged environment=prod: no version before the commit time." "$out"
+assert_eq "not tagged source in step summary" \
+  "Source SBOM 7 (app-src) was not tagged environment=prod: no version before the commit time." "$(cat "$WORK/tag-summary")"
+
+# --- commit lookup 403: warning, tags without --commit-time (wrong code: passing an empty --commit-time, which the CLI rejects) ---
+out=$(run_tag MOCK_CURL_STATUS=403)
+assert_eq "commit lookup failure passes" "0" "$?"
+assert_contains "commit lookup failure warns with status" "::warning title=Commit time not found::" "$out"
+assert_contains "commit lookup warning names HTTP status" "(HTTP 403)" "$out"
+assert_not_contains "no --commit-time after failed lookup" "--commit-time" "$(grep 'mock tag-deployment' <<<"$out")"
+
 echo
 echo "$PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

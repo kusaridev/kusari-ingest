@@ -11,6 +11,10 @@
 #                         --map-components is passed and $MOCK_MAPPED_RESULTS
 #                         is set, that fixture is copied instead — simulating
 #                         the CLI updating the results with final component IDs.
+#   platform sboms tag-deployment
+#                       - prints its argv on stderr and $MOCK_TAG_OUTPUT on
+#                         stdout. With $MOCK_TAG_ERROR set, also prints it as a
+#                         cobra "Error: " line and exits 1.
 set -euo pipefail
 
 if [ "${1:-}" = "--version" ]; then
@@ -52,6 +56,14 @@ case "${1:-} ${2:-}" in
       else
         cp "${MOCK_UPLOAD_RESULTS:?MOCK_UPLOAD_RESULTS must point to a results fixture}" "$rf"
       fi
+    fi
+    ;;
+  "platform sboms")
+    echo "mock tag-deployment: $*" >&2
+    cat "${MOCK_TAG_OUTPUT:?MOCK_TAG_OUTPUT must point to a tag-deployment output fixture}"
+    if [ -n "${MOCK_TAG_ERROR:-}" ]; then
+      echo "Error: ${MOCK_TAG_ERROR}" >&2
+      exit 1
     fi
     ;;
   *)

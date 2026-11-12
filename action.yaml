@@ -123,6 +123,12 @@ outputs:
   results:
     description: 'Contents of the ingestion results JSON ({"sboms": [...]} with software/component IDs per ingested SBOM). Populated only when the results-file input is set or map-components is true; empty otherwise. When map-components is true, reflects the final post-mapping state.'
     value: ${{ steps.ingest.outputs.results }}
+  sbom-id:
+    description: 'Kusari Platform SBOM ID (v2_sbom_id) of the first ingested SBOM, for kusaridev/kusari-ingest/tag-deployment. Set only when the results-file input is set or map-components is true; empty otherwise. Only the first ingested SBOM''s IDs are given; read the results output for the others.'
+    value: ${{ steps.ingest.outputs.sbom-id }}
+  sbom-version-id:
+    description: 'Kusari Platform version ID (v2_version_id) of the first ingested SBOM, for kusaridev/kusari-ingest/tag-deployment. Set only when the results-file input is set or map-components is true; empty otherwise. Only the first ingested SBOM''s IDs are given; read the results output for the others.'
+    value: ${{ steps.ingest.outputs.sbom-version-id }}
 
 # Composite action: the kusari CLI runs on the runner host rather than in an
 # isolated container. That lets waybill use the runner's docker daemon and
@@ -136,7 +142,7 @@ runs:
     - name: Install kusari CLI
       shell: bash
       env:
-        KUSARI_CLI_VERSION: "2.14.5"   # keep in sync with kusari-cli releases
+        KUSARI_CLI_VERSION: "2.15.0"   # keep in sync with kusari-cli releases and tag-deployment/action.yaml
       run: |
         set -euo pipefail
         case "${RUNNER_OS}" in
@@ -262,5 +268,12 @@ runs:
             echo ""   # the CLI's JSON may lack a trailing newline; the heredoc delimiter needs its own line
           fi
           echo "${delim}"
+          sbom_id="" sbom_version_id=""
+          if [ -n "${results_file}" ] && [ -f "${results_file}" ]; then
+            sbom_id="$(jq -r '.sboms[0].v2_sbom_id // empty' "${results_file}")"
+            sbom_version_id="$(jq -r '.sboms[0].v2_version_id // empty' "${results_file}")"
+          fi
+          echo "sbom-id=${sbom_id}"
+          echo "sbom-version-id=${sbom_version_id}"
         } >> "${GITHUB_OUTPUT}"
         exit "${status}"
