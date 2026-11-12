@@ -109,5 +109,6 @@ runs:
         INPUT_TOKEN_ENDPOINT: ${{ inputs.token-endpoint }}
         INPUT_CONSOLE_URL: ${{ inputs.console-url }}
         INPUT_PLATFORM_URL: ${{ inputs.platform-url }}
-        INPUT_FAIL_ON_ERROR: ${{ inputs.fail-on-error }}
+        # Same case-insensitive comparison as the install step's continue-on-error.
+        INPUT_FAIL_ON_ERROR: ${{ inputs.fail-on-error == 'true' }}
       run: bash "${GITHUB_ACTION_PATH}/entrypoint.sh"

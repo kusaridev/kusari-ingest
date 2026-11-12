@@ -40,7 +40,7 @@ if [ -z "${commit_time}" ]; then
     -H "Accept: application/vnd.github+json" \
     "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}")"
   if [ "${http_status}" = "200" ]; then
-    commit_time="$(jq -r '.commit.committer.date // empty' "${body}" 2>/dev/null)"
+    commit_time="$(jq -r '.commit.committer.date // empty' "${body}")"
   fi
   if [ -z "${commit_time}" ]; then
     echo "::warning title=Commit time not found::Could not read the committer date of ${GITHUB_SHA} in ${GITHUB_REPOSITORY} (HTTP ${http_status}). Tagging without --commit-time. Give the token contents: read, or pass commit-time."
@@ -92,7 +92,7 @@ delim="KUSARI_$(od -An -tx8 -N16 /dev/urandom | tr -d ' \n')"
 
 not_tagged="$(jq -r 'select(.source.result? == "not_tagged")
   | "Source SBOM \(.source.sbom_id) (\(.source.name)) was not tagged \(.label)=\(.value): \(.source.message)."' \
-  "${stdout_file}" 2>/dev/null)"
+  "${stdout_file}")"
 if [ -n "${not_tagged}" ]; then
   echo "::warning title=Source SBOM not tagged::$(escape "${not_tagged}")"
   echo "${not_tagged}" >> "${GITHUB_STEP_SUMMARY}"

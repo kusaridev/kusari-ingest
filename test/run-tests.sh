@@ -205,7 +205,9 @@ out=$(run_tag MOCK_CURL_STATUS=403)
 assert_eq "commit lookup failure passes" "0" "$?"
 assert_contains "commit lookup failure warns with status" "::warning title=Commit time not found::" "$out"
 assert_contains "commit lookup warning names HTTP status" "(HTTP 403)" "$out"
-assert_not_contains "no --commit-time after failed lookup" "--commit-time" "$(grep 'mock tag-deployment' <<<"$out")"
+assert_eq "tags without --commit-time after failed lookup" \
+  "mock tag-deployment: platform sboms tag-deployment 42 99 prod --label=environment --tenant-endpoint=https://demo.api.us.kusari.cloud" \
+  "$(grep 'mock tag-deployment' <<<"$out")"
 
 echo
 echo "$PASS passed, $FAIL failed"
