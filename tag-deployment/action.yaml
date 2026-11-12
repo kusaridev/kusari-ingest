@@ -1,0 +1,116 @@
+---
+name: 'Kusari Tag Deployment'
+description: 'Tag a deployed image SBOM version, and the source SBOM version deployed with it, with environment=<value>'
+branding:
+  icon: "tag"
+  color: "purple"
+author: 'Kusari'
+inputs:
+  sbom-id:
+    description: 'Kusari Platform SBOM ID of the deployed image SBOM. The root kusari-ingest action''s `sbom-id` output.'
+    required: true
+  sbom-version-id:
+    description: 'Kusari Platform version ID of the deployed image SBOM version. The root kusari-ingest action''s `sbom-version-id` output.'
+    required: true
+  value:
+    description: 'Where the version is deployed, such as prod. Tagged as <label>=<value>.'
+    required: true
+  label:
+    description: 'Tag label. Set it to record another kind of deployment, such as region.'
+    required: false
+    default: "environment"
+  commit-time:
+    description: 'Committer date of the deployed commit, RFC3339. When empty, it is looked up for github.sha in github.repository with github-token. Pass it when the deploy runs in a different repo or commit than the build.'
+    required: false
+    default: ""
+  github-token:
+    description: 'Token for the commit time lookup. Needs contents: read.'
+    required: false
+    default: ${{ github.token }}
+  tenant-endpoint:
+    description: 'Kusari Platform tenant api endpoint'
+    required: true
+  client-id:
+    description: 'Client id for auth token provider'
+    required: true
+  client-secret:
+    description: 'Client secret for auth token provider'
+    required: true
+  token-endpoint:
+    description: 'Kusari Platform auth token provider endpoint'
+    required: true
+    default: https://auth.us.kusari.cloud/oauth2/token
+  console-url:
+    description: 'Internal use only. Console URL override for non-production (e.g. dev) environments. Leave unset for production.'
+    required: false
+    default: ""
+  platform-url:
+    description: 'Internal use only. Platform API URL override for non-production (e.g. dev) environments. Leave unset for production.'
+    required: false
+    default: ""
+  fail-on-error:
+    description: 'When "true", a failed tag fails the step. Otherwise it is a warning and the step passes.'
+    required: false
+    default: "false"
+outputs:
+  result:
+    description: 'The JSON the kusari CLI printed: the label, value, and what was tagged on the image and source SBOMs.'
+    value: ${{ steps.tag.outputs.result }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install kusari CLI
+      shell: bash
+      env:
+        KUSARI_CLI_VERSION: "2.15.0"   # keep in sync with the root action.yaml
+        FAIL_ON_ERROR: ${{ inputs.fail-on-error == 'true' }}
+      run: |
+        set -euo pipefail
+        # Unless fail-on-error is true, a failed install passes; the next step
+        # then finds no CLI and reports it as a failed tag.
+        trap '[ $? -ne 0 ] && [ "${FAIL_ON_ERROR}" != "true" ] && exit 0' EXIT
+        case "${RUNNER_OS}" in
+          Linux) os=linux ;;
+          macOS) os=darwin ;;
+          *) echo "kusari-ingest: unsupported runner OS '${RUNNER_OS}'" >&2; exit 1 ;;
+        esac
+        case "${RUNNER_ARCH}" in
+          X64) arch=amd64 ;;
+          ARM64) arch=arm64 ;;
+          *) echo "kusari-ingest: unsupported runner arch '${RUNNER_ARCH}'" >&2; exit 1 ;;
+        esac
+        [ "${os}" = "darwin" ] && arch=all   # macOS ships a universal archive
+        asset="kusari-cli_${KUSARI_CLI_VERSION}_${os}_${arch}.tar.gz"
+        base="https://github.com/kusaridev/kusari-cli/releases/download/v${KUSARI_CLI_VERSION}"
+        tmp="$(mktemp -d)"
+        curl -fsSL -o "${tmp}/${asset}" "${base}/${asset}"
+        curl -fsSL -o "${tmp}/checksums.txt" "${base}/kusari-cli_${KUSARI_CLI_VERSION}_checksums.txt"
+        (cd "${tmp}" && grep " ${asset}\$" checksums.txt | shasum -a 256 -c -)
+        tar -xzf "${tmp}/${asset}" -C "${tmp}"
+        bin="$(find "${tmp}" -type f -name kusari | head -1)"
+        dest="${RUNNER_TEMP}/kusari-bin"
+        mkdir -p "${dest}"
+        mv "${bin}" "${dest}/kusari"
+        chmod +x "${dest}/kusari"
+        echo "${dest}" >> "${GITHUB_PATH}"
+    - name: Tag deployment
+      id: tag
+      shell: bash
+      env:
+        # Inputs reach the shell only through env, to avoid shell injection.
+        INPUT_SBOM_ID: ${{ inputs.sbom-id }}
+        INPUT_SBOM_VERSION_ID: ${{ inputs.sbom-version-id }}
+        INPUT_VALUE: ${{ inputs.value }}
+        INPUT_LABEL: ${{ inputs.label }}
+        INPUT_COMMIT_TIME: ${{ inputs.commit-time }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_TENANT_ENDPOINT: ${{ inputs.tenant-endpoint }}
+        INPUT_CLIENT_ID: ${{ inputs.client-id }}
+        INPUT_CLIENT_SECRET: ${{ inputs.client-secret }}
+        INPUT_TOKEN_ENDPOINT: ${{ inputs.token-endpoint }}
+        INPUT_CONSOLE_URL: ${{ inputs.console-url }}
+        INPUT_PLATFORM_URL: ${{ inputs.platform-url }}
+        # Same case-insensitive comparison as the install step's continue-on-error.
+        INPUT_FAIL_ON_ERROR: ${{ inputs.fail-on-error == 'true' }}
+      run: bash "${GITHUB_ACTION_PATH}/entrypoint.sh"

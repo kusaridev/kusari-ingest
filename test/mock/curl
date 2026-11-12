@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Mock curl for the tag-deployment commit time lookup. Prints its argv on
+# stderr, writes $MOCK_CURL_BODY to the -o path and prints $MOCK_CURL_STATUS,
+# as `curl -o <file> -w '%{http_code}'` does.
+set -euo pipefail
+echo "mock curl: $*" >&2
+out=""
+prev=""
+for a in "$@"; do
+  [ "$prev" = "-o" ] && out="$a"
+  prev="$a"
+done
+[ -n "$out" ] && cp "${MOCK_CURL_BODY:?MOCK_CURL_BODY must point to a response fixture}" "$out"
+printf '%s' "${MOCK_CURL_STATUS:-200}"

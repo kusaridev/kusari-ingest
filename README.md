@@ -94,6 +94,10 @@ With `map-components: true`, the kusari CLI (`kusari platform upload --map-compo
 
 > **API key permissions:** `results-file` requires a key scoped with `platform_data_read` (for the post-ingestion ID lookups). `map-components` requires both `platform_data_read` and `platform_data_write` — creating a component and assigning software to it are writes, while verifying the mapping and looking up existing components by name are reads, so `platform_data_read` alone is not enough. See [available permissions](https://docs.us.kusari.cloud/administration/api-keys#available-permissions).
 
+### Tagging a deployment
+
+To tag the deployed image SBOM version, and the source SBOM version deployed with it, with `environment=prod` (or any label and value), run the [`kusaridev/kusari-ingest/tag-deployment`](tag-deployment/README.md) action after the deploy. It takes the root action's `sbom-id` and `sbom-version-id` outputs. See its [README](tag-deployment/README.md) for a build-then-deploy example.
+
 ## Inputs
 
 ### `file-path`
@@ -221,7 +225,15 @@ Raw output of the kusari CLI upload command
 
 ### `results`
 
-Contents of the ingestion results JSON: `{"sboms": [...]}` with the `sbom_id`, `sbom_subject`, `file_path`, `software_id`, `software_name`, `component_id`, and `component_name` for each ingested SBOM. Populated only when the `results-file` input is set or `map-components` is `true`; empty otherwise. When `map-components` is `true`, the results (and the `results-file` contents) are updated after mapping, so they reflect the final component assignments rather than the pre-mapping state. If the step fails partway (for example a mapping error after ingestion), `results` contains whatever the CLI wrote before failing — possibly pre-mapping or partially mapped state. Consumers that read `results` from a failed step (via `if: always()` or `continue-on-error`) should treat a `null` `component_id` as unmapped rather than assuming mapping completed.
+Contents of the ingestion results JSON: `{"sboms": [...]}` with the `sbom_id`, `sbom_subject`, `file_path`, `software_id`, `software_name`, `component_id`, `component_name`, `v2_sbom_id`, and `v2_version_id` for each ingested SBOM. Populated only when the `results-file` input is set or `map-components` is `true`; empty otherwise. When `map-components` is `true`, the results (and the `results-file` contents) are updated after mapping, so they reflect the final component assignments rather than the pre-mapping state. If the step fails partway (for example a mapping error after ingestion), `results` contains whatever the CLI wrote before failing — possibly pre-mapping or partially mapped state. Consumers that read `results` from a failed step (via `if: always()` or `continue-on-error`) should treat a `null` `component_id` as unmapped rather than assuming mapping completed.
+
+### `sbom-id`
+
+Kusari Platform SBOM ID (`v2_sbom_id` in `results`) of the first ingested SBOM, as taken by [tag-deployment](tag-deployment/README.md) and `kusari platform sboms` commands. Set only when the `results-file` input is set or `map-components` is `true`; empty otherwise. Only the first ingested SBOM's IDs are given; read `results` for the others.
+
+### `sbom-version-id`
+
+Kusari Platform version ID (`v2_version_id` in `results`) of the first ingested SBOM. Set and limited like `sbom-id`.
 
 ## Testing
 
@@ -231,7 +243,7 @@ Run the test suite locally:
 bash test/run-tests.sh
 ```
 
-The tests cover `entrypoint.sh` input validation and flag plumbing (including `--results-file` and `--map-components` passthrough) using the mock kusari CLI in `test/mock/` — no network access, credentials, or real tenant required. The only dependencies are `bash` and `jq`. The component-mapping logic itself lives in the kusari CLI and is tested in the [kusari-cli](https://github.com/kusaridev/kusari-cli) repository.
+The tests cover `entrypoint.sh` input validation and flag plumbing (including `--results-file` and `--map-components` passthrough), and `tag-deployment/entrypoint.sh`'s warnings and commit time lookup, using the mock kusari CLI and curl in `test/mock/` — no network access, credentials, or real tenant required. The only dependencies are `bash` and `jq`. The component-mapping logic itself lives in the kusari CLI and is tested in the [kusari-cli](https://github.com/kusaridev/kusari-cli) repository.
 
 # License
 
