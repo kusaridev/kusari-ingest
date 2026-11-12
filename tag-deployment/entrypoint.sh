@@ -38,9 +38,9 @@ if [ -z "${commit_time}" ]; then
   http_status="$(curl -sS --max-time 30 -o "${body}" -w '%{http_code}' \
     -H "Authorization: Bearer ${INPUT_GITHUB_TOKEN}" \
     -H "Accept: application/vnd.github+json" \
-    "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}")"
+    "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/git/commits/${GITHUB_SHA}")"
   if [ "${http_status}" = "200" ]; then
-    commit_time="$(jq -r '.commit.committer.date // empty' "${body}")"
+    commit_time="$(jq -r '.committer.date // empty' "${body}")"
   fi
   if [ -z "${commit_time}" ]; then
     echo "::warning title=Commit time not found::Could not read the committer date of ${GITHUB_SHA} in ${GITHUB_REPOSITORY} (HTTP ${http_status}). Tagging without --commit-time. Give the token contents: read, or pass commit-time."

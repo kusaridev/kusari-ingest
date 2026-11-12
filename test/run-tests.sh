@@ -150,7 +150,7 @@ cat > "$WORK/not-tagged.json" <<'EOF'
  "image": {"sbom_id": 42, "version_id": 99, "result": "created", "ended_version_ids": []},
  "source": {"sbom_id": 7, "name": "app-src", "result": "not_tagged", "ended_version_ids": [], "message": "no version before the commit time"}}
 EOF
-echo '{"commit": {"committer": {"date": "2026-10-01T12:00:00Z"}}}' > "$WORK/commit.json"
+echo '{"committer": {"date": "2026-10-01T12:00:00Z"}}' > "$WORK/commit.json"
 
 # Runs the tagging script as its action.yaml step does. Extra VAR=value
 # arguments override the inputs below.
@@ -171,8 +171,8 @@ run_tag() {
 # --- happy path: commit time looked up, tagged, result output set ---
 out=$(run_tag)
 assert_eq "tag happy path exits 0" "0" "$?"
-assert_contains "commit lookup hits the commits API for github.sha" \
-  "https://api.github.com/repos/kusaridev/e2e/commits/abc123" "$out"
+assert_contains "commit lookup hits the git commits API for github.sha" \
+  "https://api.github.com/repos/kusaridev/e2e/git/commits/abc123" "$out"
 assert_contains "tag-deployment gets IDs, label, tenant and looked-up commit time" \
   "tag-deployment 42 99 prod --label=environment --tenant-endpoint=https://demo.api.us.kusari.cloud --commit-time=2026-10-01T12:00:00Z" "$out"
 assert_eq "result output holds the CLI's JSON" "created" \
