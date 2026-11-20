@@ -63,7 +63,7 @@ runs:
     - name: Install kusari CLI
       shell: bash
       env:
-        KUSARI_CLI_VERSION: "2.15.0"   # keep in sync with the root action.yaml
+        KUSARI_CLI_VERSION: "2.15.2"   # keep in sync with the root action.yaml
         FAIL_ON_ERROR: ${{ inputs.fail-on-error == 'true' }}
       run: |
         set -euo pipefail
